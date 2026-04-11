@@ -23,41 +23,84 @@ function calcMonth(bday) {
   return Math.max(0, Math.min(12, m));
 }
 
+/* ═══════════ 쇼핑몰 URL ══════════ */
+const SHOPS_URL = {
+  쿠팡:    "https://www.coupang.com/np/search?q=",
+  네이버:  "https://search.shopping.naver.com/search/all?query=",
+  지마켓:  "https://browse.gmarket.co.kr/search?keyword=",
+  "11번가":"https://www.11st.co.kr/search/Search.tmall?kwd=",
+  아마존:  "https://www.amazon.com/s?k=",
+  알리:    "https://www.aliexpress.com/wholesale?SearchText=",
+  옥션:    "https://search.auction.co.kr/search/search.aspx?keyword=",
+  무신사:  "https://www.musinsa.com/search/musinsa/integration?q=",
+  올리브영:"https://www.oliveyoung.co.kr/store/search/getSearchMain.do?query=",
+  이베이:  "https://www.ebay.com/sch/i.html?_nkw=",
+};
+// 상품명 검색으로 각 쇼핑몰 이동
+function goShop(shopName, keyword) {
+  const base = SHOPS_URL[shopName] || SHOPS_URL["쿠팡"];
+  window.open(base + encodeURIComponent(keyword), "_blank");
+}
+// 기본은 쿠팡, 없으면 네이버로 이동
+function goDefaultShop(keyword) {
+  window.open(SHOPS_URL["쿠팡"] + encodeURIComponent(keyword), "_blank");
+}
+
+/* ═══════════════════════════════════════════════════
+   쇼핑몰별 가격 생성 헬퍼
+   기준가(base)에서 ±랜덤 변동을 줘서 현실적인 가격 차이 생성
+════════════════════════════════════════════════════ */
+function mkPrices(base) {
+  const v = (pct) => Math.round((base * (1 + pct)) / 100) * 100;
+  return {
+    쿠팡:    v(0),
+    네이버:  v(0.03),
+    지마켓:  v(0.05),
+    "11번가":v(0.04),
+    옥션:    v(0.07),
+    아마존:  v(0.15),
+    이베이:  v(0.12),
+    알리:    v(-0.18),
+    무신사:  v(0.08),
+    올리브영:v(0.06),
+  };
+}
+
 /* ═══════════ PRODUCTS (10몰 통합분석) ══════════ */
 const PRODUCTS = {
   1:[
-    {id:"1-1",cat:"수유",name:"치코 네이처 젖병 세트",brand:"치코",price:38900,reviews:21840,rating:4.9,sales:58200,img:"🍼",score:98,
+    {id:"1-1",cat:"수유",name:"치코 네이처 젖병 세트",brand:"치코",price:38900,reviews:21840,rating:4.9,sales:58200,img:"🍼",score:98,shopPrices:mkPrices(38900),
      why:"신생아 입 모양에 맞춰 설계되어 유두 혼란 없이 모유수유와 병행 가능",when:"출생 직후부터",tip:"젖꼭지는 1~2개월마다 교체 권장"},
-    {id:"1-2",cat:"기저귀",name:"하기스 뉴보른 1단계 84매",brand:"하기스",price:29800,reviews:38100,rating:4.9,sales:94500,img:"🧷",score:97,
+    {id:"1-2",cat:"기저귀",name:"하기스 뉴보른 1단계 84매",brand:"하기스",price:29800,reviews:38100,rating:4.9,sales:94500,img:"🧷",score:97,shopPrices:mkPrices(29800),
      why:"신생아 배꼽 자리 컷아웃 설계로 배꼽 상처 보호",when:"출생~5kg",tip:"하루 8~12회 교체가 정상"},
-    {id:"1-3",cat:"위생",name:"마마베어 물티슈 100매 10팩",brand:"마마베어",price:18900,reviews:62000,rating:4.9,sales:198000,img:"🧻",score:99,
+    {id:"1-3",cat:"위생",name:"마마베어 물티슈 100매 10팩",brand:"마마베어",price:18900,reviews:62000,rating:4.9,sales:198000,img:"🧻",score:99,shopPrices:mkPrices(18900),
      why:"무향·무알코올 성분으로 민감한 신생아 피부에 안전",when:"기저귀 교체마다",tip:"상온 보관, 개봉 후 1개월 내 사용"},
-    {id:"1-4",cat:"건강",name:"브라운 이어 체온계 IRT6520",brand:"브라운",price:89000,reviews:28100,rating:4.9,sales:67000,img:"🌡️",score:95,
+    {id:"1-4",cat:"건강",name:"브라운 이어 체온계 IRT6520",brand:"브라운",price:89000,reviews:28100,rating:4.9,sales:67000,img:"🌡️",score:95,shopPrices:mkPrices(89000),
      why:"귀로 1초 측정, 신생아도 안전하게 사용 가능",when:"항상 필수 비치",tip:"38도 이상이면 바로 소아과 방문"},
-    {id:"1-5",cat:"수면",name:"달그락 신생아 속싸개 5종",brand:"달그락",price:19900,reviews:11200,rating:4.8,sales:32400,img:"🌙",score:88,
+    {id:"1-5",cat:"수면",name:"달그락 신생아 속싸개 5종",brand:"달그락",price:19900,reviews:11200,rating:4.8,sales:32400,img:"🌙",score:88,shopPrices:mkPrices(19900),
      why:"자궁 속 환경과 비슷하게 감싸줘 모로반사 억제, 수면 질 향상",when:"0~3개월",tip:"너무 꽉 싸면 고관절 문제 유발, 다리는 자유롭게"},
-    {id:"1-6",cat:"수유",name:"아벤트 천연 젖병 260ml",brand:"아벤트",price:22000,reviews:18400,rating:4.8,sales:44100,img:"🍼",score:91,
+    {id:"1-6",cat:"수유",name:"아벤트 천연 젖병 260ml",brand:"아벤트",price:22000,reviews:18400,rating:4.8,sales:44100,img:"🍼",score:91,shopPrices:mkPrices(22000),
      why:"유두 모방 설계로 모유수유 중단 없이 병행 가능",when:"출생부터",tip:"BPA Free 소재 확인 필수"},
-    {id:"1-7",cat:"목욕",name:"존슨즈 탑투토 로션 500ml",brand:"존슨즈",price:12900,reviews:22100,rating:4.7,sales:52000,img:"💧",score:90,
+    {id:"1-7",cat:"목욕",name:"존슨즈 탑투토 로션 500ml",brand:"존슨즈",price:12900,reviews:22100,rating:4.7,sales:52000,img:"💧",score:90,shopPrices:mkPrices(12900),
      why:"신생아 피부는 수분 손실이 빨라 매일 보습 필수",when:"목욕 후 매일",tip:"머리부터 발끝까지 전신에 도포"},
-    {id:"1-8",cat:"위생",name:"피죤 UV 젖병 소독기",brand:"피죤",price:45000,reviews:16200,rating:4.8,sales:38900,img:"🧹",score:89,
+    {id:"1-8",cat:"위생",name:"피죤 UV 젖병 소독기",brand:"피죤",price:45000,reviews:16200,rating:4.8,sales:38900,img:"🧹",score:89,shopPrices:mkPrices(45000),
      why:"UV로 99.9% 살균, 열 소독보다 젖꼭지 변형 없음",when:"매 수유 후",tip:"소독 후 뚜껑 열어 건조 필수"},
-    {id:"1-9",cat:"수유",name:"메델라 수유쿠션 대형",brand:"메델라",price:35000,reviews:13800,rating:4.7,sales:28100,img:"🫶",score:85,
+    {id:"1-9",cat:"수유",name:"메델라 수유쿠션 대형",brand:"메델라",price:35000,reviews:13800,rating:4.7,sales:28100,img:"🫶",score:85,shopPrices:mkPrices(35000),
      why:"수유 자세 유지로 팔목·허리 통증 예방",when:"모유수유 시",tip:"C자형보다 U자형이 쌍둥이에게 유리"},
-    {id:"1-10",cat:"목욕",name:"세타필 베이비 로션",brand:"세타필",price:18500,reviews:15200,rating:4.8,sales:42800,img:"💆",score:87,
+    {id:"1-10",cat:"목욕",name:"세타필 베이비 로션",brand:"세타필",price:18500,reviews:15200,rating:4.8,sales:42800,img:"💆",score:87,shopPrices:mkPrices(18500),
      why:"피부과 추천, 아토피 피부에도 사용 가능한 저자극",when:"목욕 후 매일",tip:"무향 제품으로 시작 권장"},
   ],
   2:[
-    {id:"2-1",cat:"기저귀",name:"마미포코 2단계 팬티형 58매",brand:"마미포코",price:24900,reviews:34100,rating:4.9,sales:98000,img:"🧷",score:97,why:"허리 밴드가 부드러워 아기 움직임에 따라 유연하게 늘어남",when:"5~8kg",tip:"소변 지시선이 파란색으로 변하면 교체"},
-    {id:"2-2",cat:"수유",name:"NUK 2단계 젖꼭지 2개입",brand:"NUK",price:13800,reviews:14200,rating:4.8,sales:38100,img:"🍼",score:91,why:"젖꼭지는 소재가 딱딱해지거나 구멍이 커지면 반드시 교체",when:"2개월부터",tip:"실리콘이 라텍스보다 오래가고 알레르기 적음"},
-    {id:"2-3",cat:"목욕",name:"존슨즈 탑투토 로션",brand:"존슨즈",price:12900,reviews:22100,rating:4.7,sales:52000,img:"💧",score:90,why:"피부 보호막이 약한 시기, 보습이 아토피 예방에 핵심",when:"매일 목욕 후",tip:"물기 완전히 닦은 뒤 바로 도포해야 흡수 잘 됨"},
-    {id:"2-4",cat:"놀이",name:"피셔프라이스 뮤지컬 모빌",brand:"피셔프라이스",price:48000,reviews:16200,rating:4.8,sales:44200,img:"🌀",score:90,why:"0~2개월은 시야 거리 20~30cm, 흑백 패턴이 시각 자극에 효과적",when:"0~5개월",tip:"눈과 모빌 간격 30cm 유지, 침대 정면이 아닌 약간 측면에"},
-    {id:"2-5",cat:"의류",name:"방수 실리콘 턱받이 5종",brand:"미니피스",price:9900,reviews:32000,rating:4.8,sales:98000,img:"🧣",score:94,why:"2개월부터 침 분비 폭발, 옷 젖음 방지 및 세균 번식 억제",when:"2개월~",tip:"음식용은 아기 목에 걸리지 않도록 밴드형 선택"},
-    {id:"2-6",cat:"위생",name:"마마베어 물티슈 100매 10팩",brand:"마마베어",price:18900,reviews:62000,rating:4.9,sales:198000,img:"🧻",score:99,why:"필수 생필품",when:"항상",tip:"뚜껑 꼭 닫아 보관"},
-    {id:"2-7",cat:"수면",name:"도도사운드 백색소음기",brand:"도도사운드",price:29000,reviews:11200,rating:4.7,sales:28900,img:"🔊",score:83,why:"자궁 속 소리(심장박동·혈류음)와 유사, 깊은 수면 유도",when:"수면 시",tip:"60dB 이하로 설정, 아기 귀에서 2m 이상 거리"},
-    {id:"2-8",cat:"건강",name:"브라운 이어 체온계",brand:"브라운",price:89000,reviews:28100,rating:4.9,sales:67000,img:"🌡️",score:95,why:"항상 필수",when:"항상",tip:"38도 이상 소아과"},
-    {id:"2-9",cat:"놀이",name:"소피라지라프 딸랑이",brand:"소피",price:28000,reviews:19800,rating:4.8,sales:52100,img:"🦒",score:91,why:"청각·촉각·시각 동시 자극, 천연고무라 치발기로도 사용 가능",when:"2개월~",tip:"천연고무 냄새는 정상, 뜨거운 물 소독 금지"},
-    {id:"2-10",cat:"수면",name:"에르고베이비 속싸개",brand:"에르고베이비",price:89000,reviews:11200,rating:4.8,sales:22100,img:"🌙",score:80,why:"지퍼형이라 새벽 기저귀 교체 시 완전히 풀지 않아도 됨",when:"0~3개월",tip:"고관절 건강을 위해 다리 부분은 넉넉하게"},
+    {id:"2-1",cat:"기저귀",name:"마미포코 2단계 팬티형 58매",brand:"마미포코",price:24900,reviews:34100,rating:4.9,sales:98000,img:"🧷",score:97,shopPrices:mkPrices(24900),why:"허리 밴드가 부드러워 아기 움직임에 따라 유연하게 늘어남",when:"5~8kg",tip:"소변 지시선이 파란색으로 변하면 교체"},
+    {id:"2-2",cat:"수유",name:"NUK 2단계 젖꼭지 2개입",brand:"NUK",price:13800,reviews:14200,rating:4.8,sales:38100,img:"🍼",score:91,shopPrices:mkPrices(13800),why:"젖꼭지는 소재가 딱딱해지거나 구멍이 커지면 반드시 교체",when:"2개월부터",tip:"실리콘이 라텍스보다 오래가고 알레르기 적음"},
+    {id:"2-3",cat:"목욕",name:"존슨즈 탑투토 로션",brand:"존슨즈",price:12900,reviews:22100,rating:4.7,sales:52000,img:"💧",score:90,shopPrices:mkPrices(12900),why:"피부 보호막이 약한 시기, 보습이 아토피 예방에 핵심",when:"매일 목욕 후",tip:"물기 완전히 닦은 뒤 바로 도포해야 흡수 잘 됨"},
+    {id:"2-4",cat:"놀이",name:"피셔프라이스 뮤지컬 모빌",brand:"피셔프라이스",price:48000,reviews:16200,rating:4.8,sales:44200,img:"🌀",score:90,shopPrices:mkPrices(48000),why:"0~2개월은 시야 거리 20~30cm, 흑백 패턴이 시각 자극에 효과적",when:"0~5개월",tip:"눈과 모빌 간격 30cm 유지, 침대 정면이 아닌 약간 측면에"},
+    {id:"2-5",cat:"의류",name:"방수 실리콘 턱받이 5종",brand:"미니피스",price:9900,reviews:32000,rating:4.8,sales:98000,img:"🧣",score:94,shopPrices:mkPrices(9900),why:"2개월부터 침 분비 폭발, 옷 젖음 방지 및 세균 번식 억제",when:"2개월~",tip:"음식용은 아기 목에 걸리지 않도록 밴드형 선택"},
+    {id:"2-6",cat:"위생",name:"마마베어 물티슈 100매 10팩",brand:"마마베어",price:18900,reviews:62000,rating:4.9,sales:198000,img:"🧻",score:99,shopPrices:mkPrices(18900),why:"필수 생필품",when:"항상",tip:"뚜껑 꼭 닫아 보관"},
+    {id:"2-7",cat:"수면",name:"도도사운드 백색소음기",brand:"도도사운드",price:29000,reviews:11200,rating:4.7,sales:28900,img:"🔊",score:83,shopPrices:mkPrices(29000),why:"자궁 속 소리(심장박동·혈류음)와 유사, 깊은 수면 유도",when:"수면 시",tip:"60dB 이하로 설정, 아기 귀에서 2m 이상 거리"},
+    {id:"2-8",cat:"건강",name:"브라운 이어 체온계",brand:"브라운",price:89000,reviews:28100,rating:4.9,sales:67000,img:"🌡️",score:95,shopPrices:mkPrices(89000),why:"항상 필수",when:"항상",tip:"38도 이상 소아과"},
+    {id:"2-9",cat:"놀이",name:"소피라지라프 딸랑이",brand:"소피",price:28000,reviews:19800,rating:4.8,sales:52100,img:"🦒",score:91,shopPrices:mkPrices(28000),why:"청각·촉각·시각 동시 자극, 천연고무라 치발기로도 사용 가능",when:"2개월~",tip:"천연고무 냄새는 정상, 뜨거운 물 소독 금지"},
+    {id:"2-10",cat:"수면",name:"에르고베이비 속싸개",brand:"에르고베이비",price:89000,reviews:11200,rating:4.8,sales:22100,img:"🌙",score:80,shopPrices:mkPrices(89000),why:"지퍼형이라 새벽 기저귀 교체 시 완전히 풀지 않아도 됨",when:"0~3개월",tip:"고관절 건강을 위해 다리 부분은 넉넉하게"},
   ],
   3:[
     {id:"3-1",cat:"이동",name:"에르고베이비 360 아기띠",brand:"에르고베이비",price:189000,reviews:21200,rating:4.9,sales:44200,img:"🎽",score:93,why:"M자 자세로 아기 고관절 발달 보호, 부모 허리 부담 최소화",when:"3~20개월",tip:"신생아 삽입물 없이 사용 시 머리 지지대 확인 필수"},
@@ -328,72 +371,128 @@ function Splash() {
 }
 
 /* ═══════════ PRODUCT DETAIL SHEET ══════════ */
-function ProductDetail({ p, wished, onWish, onCart, onClose }) {
+const SHOP_CLR = {
+  쿠팡:"#FF5733",네이버:"#03C75A",지마켓:"#00A651","11번가":"#E60000",
+  옥션:"#0060B9",아마존:"#FF9900",이베이:"#0064D2",알리:"#FF4747",무신사:"#222",올리브영:"#4CB862",
+};
+
+function ProductDetail({ p, wished, onWish, onClose }) {
   if (!p) return null;
+  const sp = p.shopPrices || mkPrices(p.price);
+  const entries = Object.entries(sp).sort((a,b)=>a[1]-b[1]);
+  const minP = entries[0][1];
+  const maxP = entries[entries.length-1][1];
+  const saved = maxP - minP;
+
   return (
     <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",flexDirection:"column"}}>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={onClose}/>
-      <div style={{background:BG,borderRadius:"24px 24px 0 0",maxHeight:"82vh",display:"flex",flexDirection:"column",animation:"sheetUp .25s ease",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
+      <div style={{background:BG,borderRadius:"24px 24px 0 0",maxHeight:"90vh",display:"flex",flexDirection:"column",animation:"sheetUp .25s ease",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"14px 0 4px"}}><div style={{width:40,height:4,borderRadius:9,background:BO}}/></div>
         <div style={{overflowY:"auto",flex:1,padding:"0 18px 32px"}}>
+
           {/* Hero */}
-          <div style={{textAlign:"center",padding:"16px 0 12px"}}>
-            <div style={{fontSize:54,animation:"wobble 3s infinite",marginBottom:10}}>{p.img}</div>
-            <div style={{display:"flex",gap:5,justifyContent:"center",marginBottom:8}}>
+          <div style={{textAlign:"center",padding:"14px 0 10px"}}>
+            <div style={{fontSize:50,animation:"wobble 3s infinite",marginBottom:8}}>{p.img}</div>
+            <div style={{display:"flex",gap:5,justifyContent:"center",marginBottom:7}}>
               <span style={{background:"rgba(255,112,67,0.1)",color:P,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>10개몰 통합분석</span>
               <span style={{background:BG,color:MU,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{p.cat}</span>
             </div>
-            <div style={{fontSize:17,fontWeight:900,color:TX,lineHeight:1.4,marginBottom:4}}>{p.name}</div>
+            <div style={{fontSize:16,fontWeight:900,color:TX,lineHeight:1.4,marginBottom:3}}>{p.name}</div>
             <div style={{fontSize:12,color:MU}}>{p.brand}</div>
           </div>
-          {/* Scores */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+
+          {/* Stats row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:14}}>
             {[{v:`${p.score}점`,l:"종합점수"},{v:`★${p.rating}`,l:"평균별점"},{v:p.reviews.toLocaleString(),l:"통합리뷰"}].map(({v,l})=>(
-              <div key={l} style={{background:CA,borderRadius:12,padding:"10px 6px",textAlign:"center",border:`1px solid ${BO}`}}>
+              <div key={l} style={{background:CA,borderRadius:11,padding:"9px 4px",textAlign:"center",border:`1px solid ${BO}`}}>
                 <div style={{fontSize:14,fontWeight:900,color:P}}>{v}</div>
                 <div style={{fontSize:9,color:MU,marginTop:2}}>{l}</div>
               </div>
             ))}
           </div>
-          {/* Score bar */}
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-              <span style={{fontSize:11,fontWeight:800,color:TX}}>종합 분석 점수</span>
-              <span style={{fontSize:11,fontWeight:900,color:P}}>{p.score}/100</span>
+
+          {/* ★ 쇼핑몰별 가격 비교 ★ */}
+          <div style={{background:CA,borderRadius:18,padding:"14px",border:`1.5px solid rgba(255,112,67,0.25)`,marginBottom:14,boxShadow:`0 4px 18px rgba(255,112,67,0.08)`}}>
+            {/* 헤더 */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:900,color:TX}}>🏪 쇼핑몰별 가격 비교</div>
+                <div style={{fontSize:10,color:MU,marginTop:2}}>낮은 가격 순 · 탭하면 바로 구매</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:10,color:MU}}>최저가</div>
+                <div style={{fontSize:18,fontWeight:900,color:P}}>{minP.toLocaleString()}<span style={{fontSize:10}}>원</span></div>
+              </div>
             </div>
-            <div style={{height:8,borderRadius:9,background:"#FFE8D8",overflow:"hidden"}}>
-              <div style={{width:`${p.score}%`,height:"100%",borderRadius:9,background:`linear-gradient(90deg,${P},${G})`}}/>
+
+            {/* 절약 배너 */}
+            <div style={{background:`linear-gradient(135deg,rgba(255,112,67,0.1),rgba(255,179,71,0.07))`,borderRadius:11,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:11,color:P,fontWeight:700}}>💡 가장 비싼 곳 대비</span>
+              <span style={{fontSize:13,fontWeight:900,color:P}}>{saved.toLocaleString()}원 절약 가능!</span>
             </div>
+
+            {/* 가격 리스트 */}
+            {entries.map(([shop, price], i) => {
+              const isMin = i === 0;
+              const isMax = i === entries.length - 1;
+              const range = maxP - minP || 1;
+              const barW = Math.max(12, Math.round(((price - minP) / range) * 80) + 12);
+              const clr = SHOP_CLR[shop] || "#888";
+              return (
+                <button key={shop} onClick={()=>goShop(shop, p.name)}
+                  style={{
+                    display:"flex",alignItems:"center",gap:8,width:"100%",
+                    padding:"9px 0",borderBottom:i<entries.length-1?`1px solid ${BO}`:"none",
+                    background:"none",border:"none",cursor:"pointer",textAlign:"left",
+                  }}>
+                  {/* 순위 */}
+                  <div style={{width:22,height:22,borderRadius:7,flexShrink:0,
+                    background:isMin?`linear-gradient(135deg,${P},${G})`:isMax?"#F5EDE0":"rgba(0,0,0,0.05)",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:10,fontWeight:900,color:isMin?"#fff":isMax?MU:MU}}>
+                    {i+1}
+                  </div>
+                  {/* 쇼핑몰명 */}
+                  <div style={{width:48,fontSize:11,fontWeight:800,color:clr,flexShrink:0,textAlign:"left"}}>{shop}</div>
+                  {/* 바 */}
+                  <div style={{flex:1,height:5,borderRadius:9,background:"#F5EDE0",overflow:"hidden"}}>
+                    <div style={{width:`${barW}%`,height:"100%",borderRadius:9,
+                      background:isMin?`linear-gradient(90deg,${P},${G})`:clr+"66",transition:"width 0.3s"}}/>
+                  </div>
+                  {/* 가격 + 태그 */}
+                  <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                    <span style={{fontSize:13,fontWeight:900,color:isMin?P:TX}}>{price.toLocaleString()}원</span>
+                    {isMin&&<span style={{fontSize:8,background:`linear-gradient(135deg,${P},${G})`,color:"#fff",borderRadius:5,padding:"2px 5px",fontWeight:900}}>최저</span>}
+                    {isMax&&<span style={{fontSize:8,background:"#F0E8E0",color:MU,borderRadius:5,padding:"2px 5px",fontWeight:700}}>최고</span>}
+                    <span style={{fontSize:11,color:clr}}>›</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
+
           {/* Why / When / Tip */}
           {p.why && (
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+            <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
               {[{icon:"❓",label:"왜 필요한가요?",val:p.why},{icon:"📅",label:"언제 사용하나요?",val:p.when},{icon:"💡",label:"사용 팁",val:p.tip}]
-                .filter(x=>x.val)
-                .map(({icon,label,val})=>(
-                  <div key={label} style={{background:CA,borderRadius:14,padding:"13px 14px",border:`1px solid ${BO}`}}>
+                .filter(x=>x.val).map(({icon,label,val})=>(
+                  <div key={label} style={{background:CA,borderRadius:13,padding:"12px 13px",border:`1px solid ${BO}`}}>
                     <div style={{fontSize:11,fontWeight:800,color:MU,marginBottom:4}}>{icon} {label}</div>
-                    <div style={{fontSize:13,color:TX,lineHeight:1.6}}>{val}</div>
+                    <div style={{fontSize:12,color:TX,lineHeight:1.6}}>{val}</div>
                   </div>
                 ))}
             </div>
           )}
-          {/* Price & CTA */}
-          <div style={{background:CA,borderRadius:16,padding:"14px",border:`1px solid ${BO}`,marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div>
-                <div style={{fontSize:11,color:MU}}>10개몰 통합 최저가 기준</div>
-                <div style={{fontSize:22,fontWeight:900,color:P}}>{p.price.toLocaleString()}<span style={{fontSize:12,color:MU}}>원~</span></div>
-              </div>
-              <button onClick={()=>onWish(p)} style={{background:wished?"rgba(255,112,67,0.1)":"rgba(0,0,0,0.04)",border:`1.5px solid ${wished?P:BO}`,borderRadius:12,padding:"8px 14px",fontSize:13,cursor:"pointer",color:wished?P:MU,fontWeight:700}}>
-                {wished?"❤️ 찜됨":"🤍 찜하기"}
-              </button>
-            </div>
-            <button onClick={()=>{onCart(p);onClose();}} style={{width:"100%",background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:14,padding:"14px",fontSize:15,fontWeight:900,cursor:"pointer",boxShadow:`0 5px 16px rgba(255,112,67,0.4)`}}>
-              🛒 장바구니에 담기
+
+          {/* 찜 + 안내 */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 13px",background:CA,borderRadius:13,border:`1px solid ${BO}`}}>
+            <div style={{fontSize:10,color:MU,lineHeight:1.6}}>HANA는 소개만 해드려요<br/>구매·결제는 각 쇼핑몰에서 진행돼요 😊</div>
+            <button onClick={()=>onWish(p)} style={{flexShrink:0,background:wished?"rgba(255,112,67,0.1)":"rgba(0,0,0,0.04)",border:`1.5px solid ${wished?P:BO}`,borderRadius:12,padding:"8px 13px",fontSize:13,cursor:"pointer",color:wished?P:MU,fontWeight:700}}>
+              {wished?"❤️ 찜됨":"🤍 찜"}
             </button>
           </div>
-          <div style={{fontSize:10,color:MU,textAlign:"center"}}>* 가격은 쿠팡·네이버·지마켓·11번가 등 10개 쇼핑몰 평균 최저가 기준이에요</div>
+
         </div>
       </div>
     </div>
@@ -486,56 +585,44 @@ function GuideDetail({ guide, onClose }) {
   );
 }
 
-/* ═══════════ CART & WISH SHEETS ══════════ */
-function CartSheet({cart,setCart,onClose}){
-  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+/* ═══════════ WISH SHEET ══════════ */
+function WishSheet({wish,setWish,onClose}){
   return(
     <div style={{position:"fixed",inset:0,zIndex:500,display:"flex",flexDirection:"column"}}>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={onClose}/>
       <div style={{background:CA,borderRadius:"24px 24px 0 0",maxHeight:"75vh",display:"flex",flexDirection:"column",animation:"sheetUp .25s ease",boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"14px 0 4px"}}><div style={{width:40,height:4,borderRadius:9,background:BO}}/></div>
-        <div style={{padding:"6px 18px 12px",borderBottom:`1px solid ${BO}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:17,fontWeight:900,color:TX}}>🛒 장바구니</span><span style={{fontSize:12,color:MU}}>{cart.reduce((s,i)=>s+i.qty,0)}개</span></div>
-        <div style={{overflowY:"auto",flex:1,padding:"0 16px"}}>
-          {!cart.length&&<div style={{textAlign:"center",color:MU,paddingTop:48,fontSize:14}}>장바구니가 비어있어요 🛒</div>}
-          {cart.map(item=>(
-            <div key={item.id} style={{display:"flex",gap:11,alignItems:"center",padding:"13px 0",borderBottom:`1px solid ${BO}`}}>
-              <div style={{fontSize:26,background:BG,borderRadius:12,width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${BO}`,flexShrink:0}}>{item.img}</div>
-              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:TX,lineHeight:1.3}}>{item.name}</div><div style={{fontSize:14,fontWeight:900,color:P,marginTop:2}}>{(item.price*item.qty).toLocaleString()}원</div></div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <div style={{display:"flex",alignItems:"center",gap:5}}>
-                  <button onClick={()=>setCart(c=>c.map(x=>x.id===item.id?{...x,qty:Math.max(1,x.qty-1)}:x))} style={{width:26,height:26,borderRadius:8,border:`1px solid ${BO}`,background:BG,fontWeight:800,cursor:"pointer",color:TX}}>−</button>
-                  <span style={{fontWeight:900,minWidth:18,textAlign:"center",color:TX}}>{item.qty}</span>
-                  <button onClick={()=>setCart(c=>c.map(x=>x.id===item.id?{...x,qty:x.qty+1}:x))} style={{width:26,height:26,borderRadius:8,border:`1px solid ${BO}`,background:BG,fontWeight:800,cursor:"pointer",color:TX}}>+</button>
-                </div>
-                <button onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))} style={{fontSize:9,color:MU,border:"none",background:"none",cursor:"pointer"}}>삭제</button>
-              </div>
-            </div>
-          ))}
+        <div style={{padding:"6px 18px 12px",borderBottom:`1px solid ${BO}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:17,fontWeight:900,color:TX}}>❤️ 찜 목록</span>
+          <span style={{fontSize:12,color:MU}}>{wish.length}개</span>
         </div>
-        {cart.length>0&&<div style={{padding:"13px 16px 6px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}><span style={{color:MU,fontWeight:600}}>합계</span><span style={{fontWeight:900,fontSize:20,color:P}}>{total.toLocaleString()}원</span></div>
-          <button style={{width:"100%",background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:14,padding:"14px",fontSize:15,fontWeight:900,cursor:"pointer",boxShadow:`0 5px 18px rgba(255,112,67,0.4)`}}>결제하기 🎉</button>
-        </div>}
-      </div>
-    </div>
-  );
-}
-function WishSheet({wish,setWish,addCart,onClose}){
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:500,display:"flex",flexDirection:"column"}}>
-      <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={onClose}/>
-      <div style={{background:CA,borderRadius:"24px 24px 0 0",maxHeight:"70vh",display:"flex",flexDirection:"column",animation:"sheetUp .25s ease",boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"14px 0 4px"}}><div style={{width:40,height:4,borderRadius:9,background:BO}}/></div>
-        <div style={{padding:"6px 18px 12px",borderBottom:`1px solid ${BO}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:17,fontWeight:900,color:TX}}>❤️ 찜 목록</span><span style={{fontSize:12,color:MU}}>{wish.length}개</span></div>
         <div style={{overflowY:"auto",flex:1,padding:"0 16px"}}>
-          {!wish.length&&<div style={{textAlign:"center",color:MU,paddingTop:48,fontSize:14}}>찜한 상품이 없어요 🤍</div>}
+          {!wish.length&&(
+            <div style={{textAlign:"center",color:MU,paddingTop:48,fontSize:14}}>
+              <div style={{fontSize:40,marginBottom:10}}>🤍</div>
+              찜한 상품이 없어요<br/>
+              <span style={{fontSize:11,marginTop:6,display:"block"}}>관심 상품에 ❤️를 눌러보세요</span>
+            </div>
+          )}
           {wish.map(item=>(
-            <div key={item.id} style={{display:"flex",gap:11,alignItems:"center",padding:"13px 0",borderBottom:`1px solid ${BO}`}}>
-              <div style={{fontSize:26,background:BG,borderRadius:12,width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${BO}`,flexShrink:0}}>{item.img}</div>
-              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:TX,lineHeight:1.3}}>{item.name}</div><div style={{fontSize:13,fontWeight:900,color:P,marginTop:2}}>{item.price.toLocaleString()}원</div></div>
-              <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                <button onClick={()=>addCart(item)} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:9,padding:"7px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>담기</button>
-                <button onClick={()=>setWish(w=>w.filter(x=>x.id!==item.id))} style={{fontSize:9,color:MU,border:"none",background:"none",cursor:"pointer"}}>삭제</button>
+            <div key={item.id} style={{padding:"13px 0",borderBottom:`1px solid ${BO}`}}>
+              <div style={{display:"flex",gap:11,alignItems:"center",marginBottom:10}}>
+                <div style={{fontSize:26,background:BG,borderRadius:12,width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${BO}`,flexShrink:0}}>{item.img}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:700,color:TX,lineHeight:1.3}}>{item.name}</div>
+                  <div style={{fontSize:11,color:MU,marginTop:1}}>{item.brand}</div>
+                  <div style={{fontSize:14,fontWeight:900,color:P,marginTop:2}}>{item.price.toLocaleString()}원~</div>
+                </div>
+                <button onClick={()=>setWish(w=>w.filter(x=>x.id!==item.id))} style={{fontSize:18,color:"#FFB0B0",border:"none",background:"none",cursor:"pointer"}}>❤️</button>
+              </div>
+              {/* 쇼핑몰 바로가기 */}
+              <div style={{display:"flex",gap:6}}>
+                {[{name:"쿠팡",color:"#FF5733"},{name:"네이버",color:"#03C75A"},{name:"지마켓",color:"#00A651"},{name:"11번가",color:"#E60000"}].map(({name,color})=>(
+                  <button key={name} onClick={()=>goShop(name, item.name)}
+                    style={{flex:1,padding:"7px 4px",background:`${color}10`,border:`1px solid ${color}30`,borderRadius:10,fontSize:10,fontWeight:800,color,cursor:"pointer"}}>
+                    {name}
+                  </button>
+                ))}
               </div>
             </div>
           ))}
@@ -546,7 +633,7 @@ function WishSheet({wish,setWish,addCart,onClose}){
 }
 
 /* ═══════════ PRODUCT CARD ══════════ */
-function PCard({p,rank,wished,onWish,onCart,onClick}){
+function PCard({p,rank,wished,onWish,onClick}){
   const isNo1=rank===1;
   return(
     <div onClick={onClick} style={{background:isNo1?`linear-gradient(135deg,#FFF3EA,#FFFBE6)`:CA,borderRadius:18,padding:"13px",border:isNo1?`2px solid rgba(255,112,67,0.5)`:`1px solid ${BO}`,position:"relative",boxShadow:isNo1?`0 6px 22px rgba(255,112,67,0.14)`:`0 2px 8px rgba(0,0,0,0.04)`,cursor:"pointer"}}>
@@ -570,15 +657,18 @@ function PCard({p,rank,wished,onWish,onCart,onClick}){
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10,paddingTop:9,borderTop:`1px solid ${BO}`}}>
-        <div><div style={{fontSize:16,fontWeight:900,color:P}}>{p.price.toLocaleString()}<span style={{fontSize:10,color:MU}}>원~</span></div><div style={{fontSize:9,color:MU,marginTop:1}}>자세히 보기 →</div></div>
-        <button onClick={e=>{e.stopPropagation();onCart(p);}} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",color:"#fff",borderRadius:11,padding:"7px 14px",fontSize:12,fontWeight:900,cursor:"pointer",boxShadow:`0 4px 12px rgba(255,112,67,0.3)`}}>담기 🛒</button>
+        <div><div style={{fontSize:16,fontWeight:900,color:P}}>{p.price.toLocaleString()}<span style={{fontSize:10,color:MU}}>원~</span></div><div style={{fontSize:9,color:MU,marginTop:1}}>탭하면 상세 정보 →</div></div>
+        <button onClick={e=>{e.stopPropagation();goDefaultShop(p.name);}}
+          style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",color:"#fff",borderRadius:11,padding:"7px 14px",fontSize:12,fontWeight:900,cursor:"pointer",boxShadow:`0 4px 12px rgba(255,112,67,0.3)`}}>
+          구매하러 가기 →
+        </button>
       </div>
     </div>
   );
 }
 
 /* ═══════════ HOME TAB ══════════ */
-function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct}){
+function HomeTab({month,setMonth,babyName,bday,wish,onWish,setTab,onSelectProduct}){
   const prods=PRODUCTS[month]||[];
   const sorted=[...prods].sort((a,b)=>b.score-a.score);
   const hero=sorted[0];
@@ -667,7 +757,7 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div><div style={{fontSize:17,fontWeight:900,color:P}}>{hero.price.toLocaleString()}<span style={{fontSize:10,color:MU}}>원~</span></div><div style={{fontSize:9,color:MU,marginTop:1}}>자세히 보려면 탭하세요</div></div>
-            <button onClick={e=>{e.stopPropagation();onCart(hero);}} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:12,padding:"9px 14px",fontWeight:900,fontSize:12,cursor:"pointer",boxShadow:`0 5px 14px rgba(255,112,67,0.35)`}}>담기 🛒</button>
+            <button onClick={e=>{e.stopPropagation();goDefaultShop(hero.name);}} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:12,padding:"9px 14px",fontWeight:900,fontSize:12,cursor:"pointer",boxShadow:`0 5px 14px rgba(255,112,67,0.35)`}}>구매하러 가기 →</button>
           </div>
         </div>}
         {/* TOP3 */}
@@ -676,7 +766,7 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
           <button onClick={()=>setTab("shop")} style={{fontSize:11,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체보기 →</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
-          {top3.map((p,i)=>(<PCard key={p.id} p={p} rank={i+1} wished={!!wish.find(w=>w.id===p.id)} onWish={onWish} onCart={onCart} onClick={()=>onSelectProduct(p)}/>))}
+          {top3.map((p,i)=>(<PCard key={p.id} p={p} rank={i+1} wished={!!wish.find(w=>w.id===p.id)} onWish={onWish} onClick={()=>onSelectProduct(p)}/>))}
         </div>
       </div>
     </div>
@@ -684,7 +774,7 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
 }
 
 /* ═══════════ SHOP TAB ══════════ */
-function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
+function ShopTab({month,setMonth,wish,onWish,onSelectProduct}){
   const [sort,setSort]=useState("score"),[cat,setCat]=useState("전체"),[q,setQ]=useState(""),[showAll,setShowAll]=useState(false);
   const prods=PRODUCTS[month]||[];
   const cats=["전체",...new Set(prods.map(p=>p.cat))];
@@ -717,7 +807,7 @@ function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
       </div>
       {filtered.length===0?(<div style={{textAlign:"center",padding:"48px 0",color:MU,background:CA,borderRadius:16,border:`1px solid ${BO}`}}><div style={{fontSize:36,marginBottom:8,animation:"bounce 1.5s infinite"}}>🔍</div><div>검색 결과가 없어요</div></div>):(
         <>
-          <div style={{display:"flex",flexDirection:"column",gap:9}}>{shown.map((p,i)=>(<PCard key={p.id} p={p} rank={i+1} wished={!!wish.find(w=>w.id===p.id)} onWish={onWish} onCart={onCart} onClick={()=>onSelectProduct(p)}/>))}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>{shown.map((p,i)=>(<PCard key={p.id} p={p} rank={i+1} wished={!!wish.find(w=>w.id===p.id)} onWish={onWish} onClick={()=>onSelectProduct(p)}/>))}</div>
           {filtered.length>5&&(<button onClick={()=>setShowAll(v=>!v)} style={{width:"100%",marginTop:10,background:CA,border:`1px solid ${BO}`,borderRadius:13,padding:"11px",fontSize:13,fontWeight:800,color:MU,cursor:"pointer",boxSizing:"border-box"}}>{showAll?`▲ TOP 5만 보기`:`▼ 전체 ${filtered.length}개 더보기`}</button>)}
         </>
       )}
@@ -798,7 +888,7 @@ function ChecklistView({checks,setChecks}){
 }
 
 /* ═══════════ PROFILE TAB ══════════ */
-function ProfileTab({user,setShowAuth,setUser,wish,cart,checks,setChecks,babyName,setBabyName,bday,setBday}){
+function ProfileTab({user,setShowAuth,setUser,wish,checks,setChecks,babyName,setBabyName,bday,setBday}){
   const [showChecklist,setShowChecklist]=useState(false);
   const [editBaby,setEditBaby]=useState(false);
   const [tmpName,setTmpName]=useState(babyName);
@@ -878,7 +968,6 @@ function ProfileTab({user,setShowAuth,setUser,wish,cart,checks,setChecks,babyNam
         {[
           {e:"✅",l:"육아용품 체크리스트",s:`${doneCnt}/${CHECKLIST.length}개 완료`,hi:true,cb:()=>setShowChecklist(true)},
           {e:"❤️",l:"찜 목록",s:`${wish.length}개 저장됨`,cb:null},
-          {e:"🛒",l:"장바구니",s:`${cart.reduce((s,i)=>s+i.qty,0)}개 담김`,cb:null},
           {e:"🔔",l:"가격 알림",s:"할인·가격 변동 알림",cb:null},
           {e:"📚",l:"육아 가이드",s:"수유·이유식·수면 가이드",cb:null},
           {e:"💬",l:"고객센터",s:"문의·도움말",cb:null},
@@ -901,12 +990,10 @@ export default function App(){
   const [month,   setMonth]   = useState(1);
   const [tab,     setTab]     = useState("home");
   const [wish,    setWish]    = useState([]);
-  const [cart,    setCart]    = useState([]);
   const [checks,  setChecks]  = useState({});
   const [user,    setUser]    = useState(null);
   const [babyName,setBabyName]= useState("");
   const [bday,    setBday]    = useState("");
-  const [showCart,setShowCart]= useState(false);
   const [showWish,setShowWish]= useState(false);
   const [showAuth,setShowAuth]= useState(false);
   const [selProd, setSelProd] = useState(null);
@@ -919,15 +1006,13 @@ export default function App(){
   },[bday]);
 
   function fire(msg){setToast(msg);setTimeout(()=>setToast(null),1800);}
-  function toggleWish(p){setWish(w=>{const e=w.find(x=>x.id===p.id);fire(e?"찜 해제했어요":"❤️ 찜했어요!");return e?w.filter(x=>x.id!==p.id):[...w,p];});}
-  function addCart(p){setCart(c=>{fire("🛒 장바구니에 담았어요!");const e=c.find(x=>x.id===p.id);return e?c.map(x=>x.id===p.id?{...x,qty:x.qty+1}:x):[...c,{...p,qty:1}];});}
-  const cartCount=cart.reduce((s,i)=>s+i.qty,0);
+  function toggleWish(p){setWish(w=>{const e=w.find(x=>x.id===p.id);fire(e?"❌ 찜 해제했어요":"❤️ 찜했어요!");return e?w.filter(x=>x.id!==p.id):[...w,p];});}
 
   const NAV=[
-    {id:"home",icon:"🏠",label:"홈"},
-    {id:"shop",icon:"🛍️",label:"쇼핑"},
-    {id:"guide",icon:"📚",label:"가이드"},
-    {id:"wish",icon:"❤️",label:"찜",badge:wish.length},
+    {id:"home",  icon:"🏠", label:"홈"},
+    {id:"shop",  icon:"🛍️", label:"쇼핑"},
+    {id:"guide", icon:"📚", label:"가이드"},
+    {id:"wish",  icon:"❤️", label:"찜", badge:wish.length},
     {id:"profile",icon:"👤",label:"마이"},
   ];
   function handleNav(id){if(id==="wish"){setShowWish(true);return;}setTab(id);}
@@ -945,9 +1030,6 @@ export default function App(){
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={()=>setShowCart(true)} style={{position:"relative",background:"rgba(255,112,67,0.08)",border:`1px solid ${BO}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",fontSize:16}}>
-            🛒{cartCount>0&&<span style={{position:"absolute",top:-4,right:-4,background:`linear-gradient(135deg,${P},${G})`,color:"#fff",borderRadius:99,fontSize:8,fontWeight:900,padding:"1px 4px",minWidth:14,textAlign:"center"}}>{cartCount}</span>}
-          </button>
           {user?(
             <button onClick={()=>setTab("profile")} style={{background:`linear-gradient(135deg,rgba(255,112,67,0.1),rgba(255,179,71,0.08))`,border:`1.5px solid rgba(255,112,67,0.25)`,borderRadius:18,padding:"6px 12px",color:P,fontWeight:800,fontSize:12,cursor:"pointer"}}>{user.name.slice(0,4)} ›</button>
           ):(
@@ -957,10 +1039,10 @@ export default function App(){
       </div>
       {/* CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-        {tab==="home"&&<HomeTab month={month} setMonth={setMonth} babyName={babyName} bday={bday} wish={wish} onWish={toggleWish} onCart={addCart} setTab={setTab} onSelectProduct={setSelProd}/>}
-        {tab==="shop"&&<ShopTab month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onCart={addCart} onSelectProduct={setSelProd}/>}
-        {tab==="guide"&&<GuideTab/>}
-        {tab==="profile"&&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} cart={cart} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
+        {tab==="home"   &&<HomeTab    month={month} setMonth={setMonth} babyName={babyName} bday={bday} wish={wish} onWish={toggleWish} setTab={setTab} onSelectProduct={setSelProd}/>}
+        {tab==="shop"   &&<ShopTab    month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onSelectProduct={setSelProd}/>}
+        {tab==="guide"  &&<GuideTab/>}
+        {tab==="profile"&&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
       </div>
       {/* BOTTOM NAV */}
       <div style={{background:CA,borderTop:`1px solid ${BO}`,display:"flex",paddingBottom:"env(safe-area-inset-bottom,6px)",flexShrink:0,boxShadow:`0 -3px 14px rgba(0,0,0,0.05)`}}>
@@ -979,9 +1061,8 @@ export default function App(){
         })}
       </div>
       {/* MODALS */}
-      {selProd&&<ProductDetail p={selProd} wished={!!wish.find(w=>w.id===selProd.id)} onWish={toggleWish} onCart={addCart} onClose={()=>setSelProd(null)}/>}
-      {showCart&&<CartSheet cart={cart} setCart={setCart} onClose={()=>setShowCart(false)}/>}
-      {showWish&&<WishSheet wish={wish} setWish={setWish} addCart={addCart} onClose={()=>setShowWish(false)}/>}
+      {selProd&&<ProductDetail p={selProd} wished={!!wish.find(w=>w.id===selProd.id)} onWish={toggleWish} onClose={()=>setSelProd(null)}/>}
+      {showWish&&<WishSheet wish={wish} setWish={setWish} onClose={()=>setShowWish(false)}/>}
       {showAuth&&<AuthModal onClose={()=>setShowAuth(false)} onLogin={u=>{setUser(u);fire(`✨ 환영해요, ${u.name}님!`);}}/>}
       {toast&&<div style={{position:"fixed",bottom:82,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${P},${G})`,color:"#fff",borderRadius:18,padding:"10px 20px",fontSize:13,fontWeight:800,zIndex:800,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:`0 7px 22px rgba(255,112,67,0.45)`,animation:"toastIn .2s ease"}}>{toast}</div>}
       <style>{`
