@@ -96,6 +96,9 @@ const PRODUCTS = {
     /* 이동 */
     {id:"1-20",cat:"이동용품",name:"다이치 원픽 360 카시트",brand:"다이치",price:380000,reviews:16200,rating:4.9,sales:34000,img:"🚗",score:87,shopPrices:mkPrices(380000),shopStats:mkShopStats(16200,4.9),why:"퇴원 시 바로 필요! 360도 회전으로 신생아~유아 장기 사용",when:"출생부터",tip:"ISOFIX 방식이 안전벨트보다 안전"},
     {id:"1-21",cat:"이동용품",name:"에르고베이비 360 아기띠",brand:"에르고베이비",price:189000,reviews:21200,rating:4.9,sales:44200,img:"🎽",score:91,shopPrices:mkPrices(189000),shopStats:mkShopStats(21200,4.9),why:"M자 자세로 고관절 발달 보호, 부모 허리 부담 최소화",when:"신생아~",tip:"신생아 삽입물 확인 필수"},
+    {id:"1-22b",cat:"유모차",name:"콤비 스리모 신생아 유모차",brand:"콤비",price:320000,reviews:14200,rating:4.8,sales:22100,img:"🛸",score:90,shopPrices:mkPrices(320000),shopStats:mkShopStats(14200,4.8),why:"신생아부터 사용 가능, 등받이 완전히 눕혀짐",when:"출생~36개월",tip:"등받이 완전히 뉘어지는 제품 필수"},
+    {id:"1-22c",cat:"유모차",name:"조이 라이트트랙스 유모차",brand:"조이",price:289000,reviews:20400,rating:4.8,sales:32000,img:"🛸",score:87,shopPrices:mkPrices(289000),shopStats:mkShopStats(20400,4.8),why:"가볍고 접기 편해 외출이 편리",when:"신생아~22kg",tip:"신생아 전용 시트 확인"},
+    {id:"1-22d",cat:"유모차",name:"맥클라렌 뉴본 유모차",brand:"맥클라렌",price:450000,reviews:8200,rating:4.7,sales:12000,img:"🛸",score:84,shopPrices:mkPrices(450000),shopStats:mkShopStats(8200,4.7),why:"프리미엄 소재, 오래 사용 가능",when:"신생아~25kg",tip:"비싸지만 내구성 최고"},
     /* 방수/위생 */
     {id:"1-22",cat:"수면용품",name:"방수패드 3장 세트",brand:"노리노리",price:18000,reviews:14200,rating:4.7,sales:38000,img:"🛡️",score:84,shopPrices:mkPrices(18000),shopStats:mkShopStats(14200,4.7),why:"침대·수유쿠션 오염 방지 필수",when:"항상",tip:"3장 이상 준비해서 세탁 로테이션"},
     {id:"1-23",cat:"기저귀/위생",name:"피죤 젖병 세정제 500ml",brand:"피죤",price:7900,reviews:18200,rating:4.7,sales:48000,img:"🧴",score:81,shopPrices:mkPrices(7900),shopStats:mkShopStats(18200,4.7),why:"일반 주방세제 대신 아기 전용 세정제 사용",when:"매 수유 후",tip:"희석 배율 꼭 지키기"},
@@ -367,7 +370,7 @@ function PCard({p,rank,wished,onWish,onClick,activeShops}){
           <div style={{fontSize:13,fontWeight:900,color:P}}>{minP.toLocaleString()}<span style={{fontSize:9,color:MU}}>원~</span></div>
           <div style={{fontSize:8,color:MU}}>★{p.rating} · 리뷰{p.reviews.toLocaleString()}</div>
         </div>
-        <div style={{display:"flex",gap:4"}}>
+        <div style={{display:"flex",gap:4}}>
           <button onClick={e=>{e.stopPropagation();onClick();}} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",color:"#fff",borderRadius:8,padding:"5px 10px",fontSize:10,fontWeight:900,cursor:"pointer"}}>사러가기 →</button>
         </div>
       </div>
@@ -529,6 +532,84 @@ function ChecklistView({checks,setChecks}){
 /* ═══════════════════════════════════════════════════
    HOME TAB
 ════════════════════════════════════════════════════ */
+/* ═══════════ CATEGORY TOP5 컴포넌트 ══════════ */
+function CatTop5({prods,cats,catColors,activeShops,setSelProd,setTab}){
+  // 판매량 기준 상위 5개 카테고리만 표시
+  const catSales=cats.map((cat,ci)=>({
+    cat,
+    ci,
+    totalSales:prods.filter(p=>p.cat===cat).reduce((s,p)=>s+p.sales,0)
+  })).sort((a,b)=>b.totalSales-a.totalSales).slice(0,5);
+
+  const [selCat,setSelCat]=useState(catSales[0]?.cat||cats[0]);
+
+  const selCi=catSales.find(c=>c.cat===selCat)?.ci||0;
+  const cc=catColors[selCi%catColors.length];
+  const catProds=[...prods.filter(p=>p.cat===selCat)].sort((a,b)=>b.score-a.score).slice(0,5);
+
+  return(
+    <div style={{marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+        <div style={{fontSize:11,fontWeight:900,color:TX}}>🏷️ 카테고리별 TOP 5</div>
+        <button onClick={()=>setTab("shop")} style={{fontSize:9,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체 →</button>
+      </div>
+
+      {/* 카테고리 탭 — 이모지 + 짧은 이름 한 줄 */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4,marginBottom:8}}>
+        {catSales.map(({cat,ci})=>{
+          const c=catColors[ci%catColors.length];
+          const active=selCat===cat;
+          const catEmojis={"수유용품":"🍼","기저귀/위생":"🧷","수면용품":"🌙","이동용품":"🚗","목욕/스킨":"💧","건강/안전":"🌡️","의류":"👶","놀이/발달":"🎮","이유식용품":"🥄","유모차":"🛸","안전용품":"🛡️","음식/간식":"🍪","신발":"👟","교육/책":"📚"};
+          const emoji=catEmojis[cat]||"📦";
+          const shortName=cat.replace("/위생","").replace("용품","").replace("/스킨","").replace("/발달","").replace("/안전","");
+          return(
+            <button key={cat} onClick={()=>setSelCat(cat)} style={{background:active?c:"rgba(0,0,0,0.04)",color:active?"#fff":MU,border:active?"none":`1px solid ${BO}`,borderRadius:8,padding:"5px 2px",fontSize:8,fontWeight:active?900:700,cursor:"pointer",textAlign:"center",lineHeight:1.4}}>
+              <span style={{fontSize:13,display:"block"}}>{emoji}</span>
+              {shortName.length>4?shortName.slice(0,4):shortName}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 선택된 카테고리 TOP5 — 스타일3 세로 리스트 */}
+      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+        {catProds.map((p,i)=>{
+          const minP=Math.min(...(activeShops.length>0?activeShops:SHOP_NAMES).map(s=>(p.shopPrices||mkPrices(p.price))[s]||p.price));
+          const tags=[];
+          if(p.sales>50000)tags.push({l:"🔥 인기",bg:"#FFE8E8",c:"#E53935"});
+          if(minP<p.price*0.85)tags.push({l:"💚 최저가",bg:"#E8F5E9",c:"#2E7D32"});
+          if(p.reviews>20000)tags.push({l:"💬 리뷰많음",bg:"#E8EAF6",c:"#3949AB"});
+          return(
+            <div key={p.id} onClick={()=>setSelProd(p)} style={{display:"flex",gap:8,alignItems:"center",padding:"9px 10px",background:CA,borderRadius:11,border:`1px solid ${i===0?cc+"60":BO}`,cursor:"pointer",boxShadow:i===0?`0 2px 8px ${cc}15`:"none"}}>
+              <div style={{fontSize:9,fontWeight:900,color:i===0?cc:MU,minWidth:18,textAlign:"center"}}>{i===0?"🏆":`${i+1}`}</div>
+              {/* 이모지 크게 박스 */}
+              <div style={{fontSize:20,background:i===0?`${cc}15`:"rgba(0,0,0,0.03)",borderRadius:8,padding:"5px",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${i===0?cc+"40":BO}`,flexShrink:0}}>{p.img}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:10,fontWeight:800,color:TX,lineHeight:1.3,marginBottom:2}}>{p.name}</div>
+                {/* 태그 뱃지 */}
+                {tags.length>0&&<div style={{display:"flex",gap:3,marginBottom:2}}>
+                  {tags.slice(0,2).map(t=><span key={t.l} style={{background:t.bg,color:t.c,borderRadius:4,padding:"1px 4px",fontSize:7,fontWeight:800}}>{t.l}</span>)}
+                </div>}
+                {/* 별점 바 */}
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <div style={{flex:1,height:3,borderRadius:9,background:"#F0F0F0",overflow:"hidden"}}>
+                    <div style={{width:`${p.score}%`,height:"100%",borderRadius:9,background:`linear-gradient(90deg,${cc},${cc}99)`}}/>
+                  </div>
+                  <span style={{fontSize:7,fontWeight:800,color:cc}}>★{p.rating}</span>
+                </div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontSize:11,fontWeight:900,color:P}}>{minP.toLocaleString()}<span style={{fontSize:7,color:MU}}>원</span></div>
+                <button onClick={e=>{e.stopPropagation();setSelProd(p);}} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:6,padding:"2px 7px",fontSize:8,fontWeight:800,cursor:"pointer",marginTop:2,display:"block"}}>바로가기</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,activeShops}){
   const prods=PRODUCTS[month]||[];
   const shops=activeShops.length>0?activeShops:SHOP_NAMES;
@@ -551,8 +632,8 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
           <div style={{fontSize:11,color:MU,marginBottom:6,fontWeight:600}}>{bday?"개월 수 선택":"개월 수를 선택해주세요 👶"}</div>
           <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
             {[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>(
-              <button key={m} onClick={()=>setMonth(m)} style={{flexShrink:0,height:36,padding:"0 10px",borderRadius:18,background:month===m?`linear-gradient(135deg,${P},${G})`:"rgba(255,255,255,0.85)",color:month===m?"#fff":MU,border:month===m?"none":`1.5px solid ${BO}`,fontWeight:900,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",position:"relative",boxShadow:month===m?`0 4px 12px rgba(255,112,67,0.35)`:`0 2px 6px rgba(0,0,0,0.05)`}}>
-                {m}개월
+              <button key={m} onClick={()=>setMonth(m)} style={{flexShrink:0,height:34,padding:"0 10px",borderRadius:18,background:month===m?`linear-gradient(135deg,${P},${G})`:"rgba(255,255,255,0.85)",color:month===m?"#fff":MU,border:month===m?"none":`1.5px solid ${BO}`,fontWeight:900,fontSize:11,cursor:"pointer",whiteSpace:"nowrap",position:"relative",boxShadow:month===m?`0 4px 12px rgba(255,112,67,0.35)`:`0 2px 6px rgba(0,0,0,0.05)`}}>
+                {m===1?"신생아":`${m}개월`}
                 {autoMonth===m&&<div style={{position:"absolute",top:-2,right:-2,width:7,height:7,borderRadius:9,background:P,border:"1.5px solid #fff"}}/>}
               </button>
             ))}
@@ -560,87 +641,112 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
         </div>
       </div>
 
-      <div style={{padding:"10px 12px 20px"}}>
-        {/* 가이드 */}
-        <div style={{marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
-            <div style={{fontSize:12,fontWeight:900,color:TX}}>📚 초보 부모 가이드</div>
-            <button onClick={()=>setTab("guide")} style={{fontSize:10,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체보기 →</button>
+      <div style={{padding:"8px 12px 20px"}}>
+
+        {/* 가이드 가로 스크롤 */}
+        <div style={{marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+            <div style={{fontSize:11,fontWeight:900,color:TX}}>📚 초보 부모 가이드</div>
+            <button onClick={()=>setTab("guide")} style={{fontSize:9,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체 →</button>
           </div>
-          <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none"}}>
+          <div style={{display:"flex",gap:4,overflowX:"auto",scrollbarWidth:"none"}}>
             {GUIDES.map(g=>(
-              <button key={g.id} onClick={()=>setTab("guide")} style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"6px 10px",background:`${g.color}12`,border:`1px solid ${g.color}30`,borderRadius:11,cursor:"pointer"}}>
-                <span style={{fontSize:14}}>{g.emoji}</span>
-                <div style={{textAlign:"left"}}>
-                  <div style={{fontSize:8,fontWeight:800,color:g.color}}>{g.tag}</div>
-                  <div style={{fontSize:10,fontWeight:800,color:TX,whiteSpace:"nowrap"}}>{g.title.length>9?g.title.slice(0,9)+"..":g.title}</div>
-                </div>
+              <button key={g.id} onClick={()=>setTab("guide")} style={{flexShrink:0,display:"flex",alignItems:"center",gap:4,padding:"5px 8px",background:`${g.color}12`,border:`1px solid ${g.color}30`,borderRadius:10,cursor:"pointer"}}>
+                <span style={{fontSize:12}}>{g.emoji}</span>
+                <div style={{fontSize:9,fontWeight:800,color:TX,whiteSpace:"nowrap"}}>{g.title.length>8?g.title.slice(0,8)+"..":g.title}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* 필수템 배너 */}
-        <button onClick={()=>setTab("home_ess")} style={{width:"100%",background:"linear-gradient(135deg,rgba(255,112,67,0.09),rgba(255,179,71,0.06))",border:`1.5px solid rgba(255,112,67,0.22)`,borderRadius:14,padding:"10px 13px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,boxSizing:"border-box"}}>
+        <button onClick={()=>setTab("home_ess")} style={{width:"100%",background:"linear-gradient(135deg,rgba(255,112,67,0.09),rgba(255,179,71,0.06))",border:`1.5px solid rgba(255,112,67,0.22)`,borderRadius:12,padding:"8px 12px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,boxSizing:"border-box"}}>
           <div>
-            <div style={{fontSize:13,fontWeight:900,color:P}}>📋 {month}개월 필수템 20가지</div>
-            <div style={{fontSize:10,color:MU,marginTop:1}}>TOP5 추천 · 이유 포함</div>
+            <div style={{fontSize:12,fontWeight:900,color:P}}>📋 {month===1?"신생아":month+"개월"} 필수템 20가지</div>
+            <div style={{fontSize:9,color:MU,marginTop:1}}>TOP5 추천 · 이유 포함</div>
           </div>
-          <span style={{fontSize:18,color:P}}>›</span>
+          <span style={{fontSize:16,color:P}}>›</span>
         </button>
 
-        {/* 8개몰 배지 */}
-        <div style={{background:"rgba(255,112,67,0.06)",border:`1px solid rgba(255,112,67,0.15)`,borderRadius:12,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:16}}>📊</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:11,fontWeight:800,color:P}}>8개 쇼핑몰 통합 분석 순위</div>
-            <div style={{fontSize:9,color:MU}}>쿠팡·네이버·지마켓·11번가·옥션·아마존·알리·올리브영</div>
+        {/* 카테고리 칩 */}
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:9,fontWeight:800,color:MU,marginBottom:4}}>카테고리</div>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {[...cats,"유모차"].filter((v,i,a)=>a.indexOf(v)===i).map((cat,i)=>(
+              <button key={cat} onClick={()=>setTab("shop")} style={{background:`${catColors[i%catColors.length]}15`,color:catColors[i%catColors.length],border:`1px solid ${catColors[i%catColors.length]}35`,borderRadius:14,padding:"3px 8px",fontSize:9,fontWeight:800,cursor:"pointer"}}>{cat}</button>
+            ))}
           </div>
         </div>
 
-        {/* 카테고리 */}
-        <div style={{marginBottom:10}}>
-          <div style={{fontSize:10,fontWeight:800,color:MU,marginBottom:5}}>카테고리</div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{cats.map((cat,i)=>(<button key={cat} onClick={()=>setTab("shop")} style={{background:`${catColors[i%catColors.length]}15`,color:catColors[i%catColors.length],border:`1px solid ${catColors[i%catColors.length]}35`,borderRadius:16,padding:"4px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>{cat}</button>))}</div>
-        </div>
-
-        {/* Hero */}
-        {hero&&<div onClick={()=>setSelProd(hero)} style={{background:"linear-gradient(135deg,#FFF0E6,#FFFBE6)",borderRadius:16,padding:"13px 13px 11px",marginBottom:10,border:`1.5px solid rgba(255,112,67,0.2)`,position:"relative",overflow:"hidden",cursor:"pointer"}}>
-          <div style={{position:"absolute",right:-8,top:-8,fontSize:55,opacity:.08}}>{hero.img}</div>
-          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}><div style={{width:5,height:5,borderRadius:9,background:P,animation:"pulse 1.5s infinite"}}/><div style={{fontSize:10,fontWeight:800,color:P}}>{month}개월 통합 1위 🏆</div></div>
-          <div style={{fontSize:14,fontWeight:900,color:TX,lineHeight:1.3,marginBottom:6}}>{hero.name}</div>
-          {hero.why&&<div style={{fontSize:10,color:MU,marginBottom:7,lineHeight:1.4}}>💡 {hero.why}</div>}
-          <div style={{display:"flex",gap:5,marginBottom:8}}>
-            {[{v:`${hero.score}점`,l:"종합"},{v:`★${hero.rating}`,l:"별점"},{v:hero.sales.toLocaleString(),l:"판매"}].map(({v,l})=>(
-              <div key={l} style={{background:"rgba(255,112,67,0.08)",borderRadius:8,padding:"5px 7px",border:"1px solid rgba(255,112,67,0.15)",textAlign:"center",flex:1}}>
-                <div style={{fontSize:11,fontWeight:900,color:P}}>{v}</div><div style={{fontSize:8,color:MU}}>{l}</div>
+        {/* 통합 1위 — 스타일3 */}
+        {hero&&(()=>{
+          const heroMinP=Math.min(...(activeShops.length>0?activeShops:SHOP_NAMES).map(s=>(hero.shopPrices||mkPrices(hero.price))[s]||hero.price));
+          const heroTags=[];
+          if(hero.sales>50000)heroTags.push({l:"🔥 인기",bg:"#FFE8E8",c:"#E53935"});
+          if(heroMinP<hero.price*0.9)heroTags.push({l:"💚 최저가",bg:"#E8F5E9",c:"#2E7D32"});
+          if(hero.reviews>30000)heroTags.push({l:"💬 리뷰많음",bg:"#E8EAF6",c:"#3949AB"});
+          return(
+            <div onClick={()=>setSelProd(hero)} style={{background:"linear-gradient(135deg,#FFF0E6,#FFFBE6)",borderRadius:12,padding:"9px 11px",marginBottom:8,border:`1px solid rgba(255,112,67,0.2)`,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+              {/* 이모지 크게 */}
+              <div style={{fontSize:26,background:"rgba(255,112,67,0.1)",borderRadius:10,padding:"6px",width:46,height:46,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid rgba(255,112,67,0.2)",flexShrink:0}}>{hero.img}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+                  <div style={{width:4,height:4,borderRadius:9,background:P,animation:"pulse 1.5s infinite"}}/>
+                  <div style={{fontSize:8,fontWeight:800,color:P}}>{month===1?"신생아":month+"개월"} 통합 1위 🏆</div>
+                </div>
+                <div style={{fontSize:11,fontWeight:900,color:TX,lineHeight:1.3,marginBottom:3}}>{hero.name}</div>
+                {/* 태그 뱃지 */}
+                <div style={{display:"flex",gap:3,marginBottom:3,flexWrap:"wrap"}}>
+                  {heroTags.map(t=><span key={t.l} style={{background:t.bg,color:t.c,borderRadius:4,padding:"1px 5px",fontSize:7,fontWeight:800}}>{t.l}</span>)}
+                </div>
+                {/* 별점 바 */}
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <div style={{flex:1,height:3,borderRadius:9,background:"#FFE8D8",overflow:"hidden"}}>
+                    <div style={{width:`${hero.score}%`,height:"100%",borderRadius:9,background:`linear-gradient(90deg,${P},${G})`}}/>
+                  </div>
+                  <span style={{fontSize:8,fontWeight:800,color:P}}>★{hero.rating}</span>
+                </div>
               </div>
-            ))}
-          </div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><div style={{fontSize:15,fontWeight:900,color:P}}>{(Math.min(...(activeShops.length>0?activeShops:SHOP_NAMES).map(s=>(hero.shopPrices||mkPrices(hero.price))[s]||hero.price))).toLocaleString()}<span style={{fontSize:9,color:MU}}>원~</span></div><div style={{fontSize:8,color:MU}}>탭해서 쇼핑몰 비교</div></div>
-            <button onClick={e=>{e.stopPropagation();setSelProd(hero);}} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontWeight:900,fontSize:11,cursor:"pointer"}}>사러가기 →</button>
-          </div>
-        </div>}
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontSize:12,fontWeight:900,color:P}}>{heroMinP.toLocaleString()}<span style={{fontSize:7,color:MU}}>원~</span></div>
+                <button onClick={e=>{e.stopPropagation();setSelProd(hero);}} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:7,padding:"4px 8px",fontWeight:900,fontSize:8,cursor:"pointer",marginTop:3,display:"block"}}>바로가기</button>
+              </div>
+            </div>
+          );
+        })()}
 
-        {/* TOP3 */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
-          <div style={{fontSize:12,fontWeight:900,color:TX}}>🏅 통합 TOP 3</div>
-          <button onClick={()=>setTab("shop")} style={{fontSize:10,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체보기 →</button>
+        {/* 통합 TOP3 가로 카드 */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <div style={{fontSize:11,fontWeight:900,color:TX}}>🏅 통합 TOP 3</div>
+          <button onClick={()=>setTab("shop")} style={{fontSize:9,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체 →</button>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:12}}>
-          {top3.map((p,i)=>(<PCard key={p.id} p={p} rank={i+1} wished={!!wish.find(w=>w.id===p.id)} onWish={onWish} onClick={()=>setSelProd(p)} activeShops={activeShops}/>))}
+        <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4,marginBottom:12}}>
+          {top3.map((p,i)=>{
+            const minP=Math.min(...(activeShops.length>0?activeShops:SHOP_NAMES).map(s=>(p.shopPrices||mkPrices(p.price))[s]||p.price));
+            const rankColors=["linear-gradient(135deg,#FF7043,#FFB347)","linear-gradient(135deg,#9E9E9E,#BDBDBD)","linear-gradient(135deg,#C8874A,#E0A870)"];
+            const rankLabels=["🏆 1위","🥈 2위","🥉 3위"];
+            return(
+              <div key={p.id} onClick={()=>setSelProd(p)} style={{flexShrink:0,width:130,background:i===0?"linear-gradient(135deg,#FFF0E6,#FFFBE6)":CA,borderRadius:12,padding:"9px",border:i===0?`1.5px solid rgba(255,112,67,0.3)`:`1px solid ${BO}`,cursor:"pointer"}}>
+                <div style={{display:"inline-block",background:rankColors[i],color:"#fff",borderRadius:6,padding:"1px 6px",fontSize:8,fontWeight:900,marginBottom:5}}>{rankLabels[i]}</div>
+                <div style={{fontSize:20,textAlign:"center",margin:"3px 0"}}>{p.img}</div>
+                <div style={{fontSize:10,fontWeight:800,color:TX,lineHeight:1.3,marginBottom:3}}>{p.name.length>12?p.name.slice(0,12)+"..":p.name}</div>
+                <div style={{fontSize:8,color:MU,marginBottom:4}}>{p.brand} · ★{p.rating}</div>
+                <div style={{fontSize:11,fontWeight:900,color:P,marginBottom:4}}>{minP.toLocaleString()}<span style={{fontSize:7,color:MU}}>원~</span></div>
+                <button onClick={e=>{e.stopPropagation();setSelProd(p);}} style={{width:"100%",background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:7,padding:"4px",fontSize:9,fontWeight:900,cursor:"pointer"}}>사러가기 →</button>
+              </div>
+            );
+          })}
         </div>
 
-        {/* TOP5 칩 */}
-        <div style={{background:CA,borderRadius:13,padding:"10px 11px",border:`1px solid ${BO}`}}>
-          <div style={{fontSize:10,fontWeight:800,color:MU,marginBottom:6}}>⭐ {month}개월 TOP5 필수템</div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {ess.top5.map((item,i)=>(
-              <span key={item} style={{background:i===0?`linear-gradient(135deg,${P},${G})`:`rgba(255,112,67,${0.12-i*0.02})`,color:i===0?"#fff":P,borderRadius:16,padding:"5px 11px",fontSize:11,fontWeight:800}}>
-                {["🏆","🥈","🥉","✦","✦"][i]} {item}
-              </span>
-            ))}
+        {/* 카테고리별 TOP5 — 탭 선택 + 세로 리스트 */}
+        <CatTop5 prods={prods} cats={cats} catColors={catColors} activeShops={activeShops} setSelProd={setSelProd} setTab={setTab}/>
+
+        {/* 8개몰 배지 (맨 아래) */}
+        <div style={{background:"rgba(255,112,67,0.06)",border:`1px solid rgba(255,112,67,0.15)`,borderRadius:12,padding:"8px 12px",marginTop:4,display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:14}}>📊</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,fontWeight:800,color:P}}>8개 쇼핑몰 통합 분석 순위</div>
+            <div style={{fontSize:8,color:MU}}>쿠팡·네이버·지마켓·11번가·옥션·아마존·알리·올리브영</div>
           </div>
         </div>
       </div>
