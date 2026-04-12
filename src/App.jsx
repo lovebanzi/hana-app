@@ -1473,11 +1473,22 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
                   </div>
 
                   {/* 별점 표시 */}
-                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"#FFFDE7",borderRadius:8,border:"1px solid #FFF176"}}>
-                    {[1,2,3,4,5].map(s=>(
-                      <span key={s} style={{fontSize:14,color:"#FFB300"}}>★</span>
-                    ))}
-                    <span style={{fontSize:10,color:"#F57F17",fontWeight:700,marginLeft:2}}>별점은 상품 클릭 후 확인</span>
+                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"#FFFDE7",borderRadius:8,border:"1px solid #FFE082"}}>
+                    {item.rating
+                      ?<>
+                        <div style={{display:"flex",gap:1}}>
+                          {[1,2,3,4,5].map(s=>(
+                            <span key={s} style={{fontSize:13,color:s<=Math.round(item.rating)?"#FFB300":"#DDD"}}>★</span>
+                          ))}
+                        </div>
+                        <span style={{fontSize:14,fontWeight:900,color:"#F57F17"}}>{item.rating.toFixed(1)}점</span>
+                        {item.reviewCount>0&&<span style={{fontSize:10,color:"#888"}}>· 리뷰 {item.reviewCount.toLocaleString()}개</span>}
+                      </>
+                      :<>
+                        <span style={{fontSize:12}}>⭐</span>
+                        <span style={{fontSize:10,color:"#F57F17",fontWeight:700}}>별점은 상품 클릭 후 확인</span>
+                      </>
+                    }
                   </div>
 
                   {/* 하단 */}
