@@ -1076,7 +1076,7 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
             onMouseMove={e=>{if(e.currentTarget.dataset.down!=="1")return;e.preventDefault();const el=e.currentTarget;const x=e.pageX-el.offsetLeft;const walk=(x-Number(el.dataset.startX))*1.5;el.scrollLeft=Number(el.dataset.scrollLeft)-walk;}}
           >
             {["수유용품","기저귀/위생","수면용품","목욕/스킨","건강/안전","의류","이동용품","유모차","놀이/발달","이유식용품","안전용품","음식/간식","신발","교육/책"].map((cat,i)=>{
-              const cc=[PINK,MINT,LAVEN,SKY,"#FFB347",P,"#8BC34A","#FF7043","#9C27B0","#00BCD4","#E91E63","#FF6F00","#0288D1","#558B2F"][i%14];
+              const cc=[PINK,MINT,LAVEN,SKY,"#FFB347","#FF8A65","#8BC34A","#29B6F6","#9C27B0","#00BCD4","#E91E63","#FF6F00","#0288D1","#558B2F"][i%14];
               return(
                 <button key={cat} onClick={()=>setTab("shop_cat_"+cat)} style={{flexShrink:0,background:`${cc}18`,color:cc,border:`1.5px solid ${cc}40`,borderRadius:20,padding:"4px 11px",fontSize:10,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>
                   {cat}
