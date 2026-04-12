@@ -25,20 +25,148 @@ function calcMonth(b){
    ─ 올리브영: 자사몰 (별도 제휴 문의)
 ═══════════════════════════════════════════════════════════ */
 const SHOPS = {
-  쿠팡:     {url:"https://www.coupang.com/np/search?q=",           color:"#FF5733",flag:"🇰🇷"},
+  쿠팡:     {url:"https://www.coupang.com/np/search?q=",            color:"#FF5733",flag:"🇰🇷"},
   네이버:   {url:"https://search.shopping.naver.com/search/all?query=",color:"#03C75A",flag:"🇰🇷"},
-  지마켓:   {url:"https://browse.gmarket.co.kr/search?keyword=",   color:"#00A651",flag:"🇰🇷"},
-  "11번가": {url:"https://www.11st.co.kr/search/Search.tmall?kwd=",color:"#E60000",flag:"🇰🇷"},
-  옥션:     {url:"https://search.auction.co.kr/search/search.aspx?keyword=",color:"#0060B9",flag:"🇰🇷"},
-  아마존:   {url:"https://www.amazon.com/s?k=",                    color:"#FF9900",flag:"🌎"},
-  알리:     {url:"https://www.aliexpress.com/wholesale?SearchText=",color:"#FF4747",flag:"🌏"},
-  올리브영: {url:"https://www.oliveyoung.co.kr/store/search/getSearchMain.do?query=",color:"#4CB862",flag:"🇰🇷"},
+  "11번가": {url:"https://www.11st.co.kr/search/Search.tmall?kwd=", color:"#E60000",flag:"🇰🇷"},
+  아마존:   {url:"https://www.amazon.com/s?k=",                     color:"#FF9900",flag:"🌎"},
+  알리:     {url:"https://www.aliexpress.com/wholesale?SearchText=", color:"#FF4747",flag:"🌏"},
 };
 const SHOP_NAMES = Object.keys(SHOPS);
+
+/* ── API 설정 ── */
+const NAVER_CLIENT_ID = "N23KX4bD_JBYsIZ3iuqJ";
+const NAVER_SECRET    = "UafocpeeyH";
+const COUPANG_AF_ID   = "AF0796578";
+
+/* 쿠팡 파트너스 링크 생성 */
+function getCoupangUrl(keyword){
+  return `https://www.coupang.com/np/search?q=${encodeURIComponent(keyword)}&channel=user&listSize=36`;
+}
+
+/* 네이버 쇼핑 검색 API */
+async function searchNaver(keyword){
+  try{
+    const res=await fetch(
+      `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(keyword)}&display=10&sort=sim`,
+      {headers:{"X-Naver-Client-Id":NAVER_CLIENT_ID,"X-Naver-Client-Secret":NAVER_SECRET}}
+    );
+    if(!res.ok)return null;
+    const data=await res.json();
+    return data.items||[];
+  }catch(e){return null;}
+}
 
 function goShop(name,kw){
   const s=SHOPS[name]||SHOPS["쿠팡"];
   window.open(s.url+encodeURIComponent(kw),"_blank");
+}
+
+/* 검색 결과 컴포넌트 */
+function SearchResults({q,onClose}){
+  const [results,setResults]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [tab,setTab]=useState("내부");
+
+  // 내부 DB 검색
+  const allProds=useMemo(()=>{
+    const seen=new Set();
+    return Object.values(PRODUCTS).flat().filter(p=>{
+      if(seen.has(p.name))return false;
+      seen.add(p.name);
+      return true;
+    });
+  },[]);
+
+  const internalResults=useMemo(()=>{
+    if(!q)return[];
+    const kw=q.toLowerCase();
+    return allProds.filter(p=>
+      p.name.toLowerCase().includes(kw)||
+      p.brand?.toLowerCase().includes(kw)||
+      p.cat?.toLowerCase().includes(kw)||
+      p.why?.toLowerCase().includes(kw)
+    ).sort((a,b)=>b.score-a.score);
+  },[q,allProds]);
+
+  useEffect(()=>{
+    if(tab!=="네이버")return;
+    setLoading(true);
+    searchNaver(q).then(items=>{
+      setResults(items||[]);
+      setLoading(false);
+    });
+  },[q,tab]);
+
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:800,background:"#fff",display:"flex",flexDirection:"column"}}>
+      {/* 헤더 */}
+      <div style={{padding:"12px 14px",borderBottom:"1px solid #EEE8E0",display:"flex",alignItems:"center",gap:10,background:"#fff"}}>
+        <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#888",padding:0}}>←</button>
+        <div style={{flex:1,fontSize:15,fontWeight:900,color:"#1A1A1A"}}>"{q}" 검색 결과</div>
+      </div>
+
+      {/* 탭 */}
+      <div style={{display:"flex",borderBottom:"1px solid #EEE8E0",background:"#fff"}}>
+        {["내부","네이버"].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"10px",background:"none",border:"none",borderBottom:tab===t?"2.5px solid #FF7043":"2.5px solid transparent",color:tab===t?"#FF7043":"#888",fontWeight:tab===t?900:600,fontSize:12,cursor:"pointer"}}>
+            {t==="내부"?`HANA DB (${internalResults.length}건)`:"네이버 쇼핑"}
+          </button>
+        ))}
+      </div>
+
+      <div style={{overflowY:"auto",flex:1,padding:"10px 14px 24px",background:"#FAFAFA"}}>
+        {/* 내부 DB 결과 */}
+        {tab==="내부"&&(
+          internalResults.length===0
+          ?<div style={{textAlign:"center",padding:"48px 0",color:"#aaa"}}>검색 결과가 없어요<br/>네이버 쇼핑에서 찾아보세요</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {internalResults.map(p=>{
+              const mp=Math.min(...SHOP_NAMES.map(s=>(p.shopPrices||mkPrices(p.price))[s]||p.price));
+              const cs=SHOP_NAMES.reduce((a,s)=>((p.shopPrices||mkPrices(p.price))[s]||p.price)<((p.shopPrices||mkPrices(p.price))[a]||p.price)?s:a,SHOP_NAMES[0]);
+              return(
+                <div key={p.id} style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1px solid #EEE8E0"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:9,color:"#FF7043",fontWeight:800,marginBottom:2}}>{p.cat}</div>
+                      <div style={{fontSize:14,fontWeight:900,color:"#1A1A1A",marginBottom:3}}>{p.name}</div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <span style={{fontSize:13,fontWeight:900,color:"#FF7043"}}>{mp.toLocaleString()}원~</span>
+                        <span style={{fontSize:10,color:"#888"}}>★{p.rating}</span>
+                        <span style={{fontSize:9,background:"#F5F0EB",color:"#888",borderRadius:4,padding:"1px 5px"}}>{cs}</span>
+                      </div>
+                    </div>
+                    <button onClick={()=>goShop(cs,p.name)} style={{background:"#FF7043",color:"#fff",border:"none",borderRadius:10,padding:"9px 13px",fontSize:12,fontWeight:900,cursor:"pointer",whiteSpace:"nowrap"}}>바로가기</button>
+                  </div>
+                  {p.why&&<div style={{marginTop:7,fontSize:10,color:"#666",background:"#FAFAFA",borderRadius:7,padding:"5px 8px"}}>{p.why}</div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 네이버 쇼핑 결과 */}
+        {tab==="네이버"&&(
+          loading
+          ?<div style={{textAlign:"center",padding:"48px 0",color:"#aaa"}}>검색 중...</div>
+          :results.length===0
+          ?<div style={{textAlign:"center",padding:"48px 0",color:"#aaa"}}>검색 결과가 없어요</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {results.map((item,i)=>(
+              <div key={i} style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1px solid #EEE8E0",display:"flex",gap:10,alignItems:"center"}}>
+                {item.image&&<img src={item.image} alt={item.title} style={{width:60,height:60,borderRadius:8,objectFit:"cover",flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:800,color:"#1A1A1A",lineHeight:1.3,marginBottom:3}} dangerouslySetInnerHTML={{__html:item.title.replace(/<[^>]*>/g,"")}}/>
+                  <div style={{fontSize:11,color:"#888",marginBottom:3}}>{item.mallName}</div>
+                  <div style={{fontSize:13,fontWeight:900,color:"#FF7043"}}>{Number(item.lprice).toLocaleString()}원~</div>
+                </div>
+                <button onClick={()=>window.open(item.link,"_blank")} style={{flexShrink:0,background:"#03C75A",color:"#fff",border:"none",borderRadius:10,padding:"9px 12px",fontSize:11,fontWeight:900,cursor:"pointer",whiteSpace:"nowrap"}}>네이버<br/>바로가기</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /* ─ 쇼핑몰별 가상 가격 생성 (실서비스시 API로 교체)
@@ -1016,13 +1144,19 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
   const [grpIdx,setGrpIdx]=useState(Math.max(0,initGroup));
   const grp=MONTH_GROUPS[grpIdx];
   const prods=getGroupProds(grp.months);
-  const sorted=[...prods].sort((a,b)=>b.score-a.score);
-  const top5=sorted.slice(0,5);
+
+  const [sortBy,setSortBy]=useState("score");
+  const sorted=useMemo(()=>[...prods].sort((a,b)=>
+    sortBy==="score"?b.score-a.score:
+    sortBy==="sales"?b.sales-a.sales:
+    sortBy==="reviews"?b.reviews-a.reviews:
+    b.rating-a.rating
+  ),[prods,sortBy]);
 
   function minPrice(p){return Math.min(...shops.map(s=>(p.shopPrices||mkPrices(p.price))[s]||p.price));}
   function cheapShop(p){return shops.reduce((a,s)=>(((p.shopPrices||mkPrices(p.price))[s]||p.price)<((p.shopPrices||mkPrices(p.price))[a]||p.price)?s:a),shops[0]);}
 
-  const DRAG=(ref)=>({
+  const DRAG=()=>({
     onMouseDown:e=>{const el=e.currentTarget;el.dataset.down="1";el.dataset.startX=e.pageX-el.offsetLeft;el.dataset.sl=el.scrollLeft;el.style.cursor="grabbing";},
     onMouseLeave:e=>{e.currentTarget.dataset.down="0";e.currentTarget.style.cursor="grab";},
     onMouseUp:e=>{e.currentTarget.dataset.down="0";e.currentTarget.style.cursor="grab";},
@@ -1034,11 +1168,10 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
 
       {/* ── 상단 헤더 영역 ── */}
       <div style={{background:"#fff",padding:"14px 16px 12px",borderBottom:"1px solid #F0E8E0"}}>
-        {/* 아기 이름 + 개월수 */}
         {bday&&autoMonth!==null&&(
           <div style={{marginBottom:10}}>
             <div style={{fontSize:18,fontWeight:900,color:"#1A1A1A",letterSpacing:-0.5}}>{babyName||"아기"}의 추천 용품</div>
-            <div style={{fontSize:12,color:"#888",marginTop:2}}>{autoMonth}개월 · {grp.label.replace("\n"," ")} 그룹</div>
+            <div style={{fontSize:12,color:"#888",marginTop:2}}>{autoMonth}개월 · {grp.label} 그룹</div>
           </div>
         )}
         {!bday&&<div style={{fontSize:18,fontWeight:900,color:"#1A1A1A",marginBottom:10,letterSpacing:-0.5}}>개월별 추천 용품</div>}
@@ -1058,11 +1191,11 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
 
       <div style={{padding:"14px 14px 28px"}}>
 
-        {/* ── 필수템 + 소독 CTA 배너 ── */}
+        {/* ── 필수템 + 소독 CTA ── */}
         <div style={{display:"flex",gap:8,marginBottom:16}}>
           <button onClick={()=>setTab("home_ess")} style={{flex:1,background:"#FF7043",border:"none",borderRadius:12,padding:"12px 10px",cursor:"pointer",textAlign:"left",color:"#fff"}}>
             <div style={{fontSize:11,fontWeight:900,marginBottom:2}}>필수템 체크리스트</div>
-            <div style={{fontSize:9,opacity:0.85}}>{grp.label.replace("\n"," ")} 추천 20가지 →</div>
+            <div style={{fontSize:9,opacity:0.85}}>{grp.label} 추천 20가지 →</div>
           </button>
           <button onClick={()=>setTab("home_steri")} style={{flex:1,background:"#4ECDC4",border:"none",borderRadius:12,padding:"12px 10px",cursor:"pointer",textAlign:"left",color:"#fff"}}>
             <div style={{fontSize:11,fontWeight:900,marginBottom:2}}>소독 가이드</div>
@@ -1085,52 +1218,54 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
           </div>
         </div>
 
-        {/* ── TOP 5 세로 리스트 ── */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:900,color:"#1A1A1A"}}>{grp.short}개월 인기 TOP 5</div>
-          <button onClick={()=>setTab("shop")} style={{fontSize:11,color:"#FF7043",background:"none",border:"1px solid #FF7043",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontWeight:700}}>전체보기</button>
+        {/* ── 상품 리스트 헤더 + 정렬 ── */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:13,fontWeight:900,color:"#1A1A1A"}}>{grp.short}개월 추천 상품 전체</div>
+          <button onClick={()=>setTab("shop")} style={{fontSize:11,color:"#FF7043",background:"none",border:"1px solid #FF7043",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontWeight:700}}>쇼핑탭</button>
         </div>
 
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {top5.map((p,i)=>{
+        {/* 정렬 버튼 */}
+        <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {[{k:"score",l:"종합순"},{k:"sales",l:"판매순"},{k:"reviews",l:"리뷰순"},{k:"rating",l:"별점순"}].map(({k,l})=>(
+            <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"7px 0",borderRadius:8,background:sortBy===k?"#FF7043":"#fff",color:sortBy===k?"#fff":"#888",border:sortBy===k?"none":"1px solid #EEE8E0",fontWeight:sortBy===k?900:600,fontSize:10,cursor:"pointer",transition:"all .15s"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {/* 상품 전체 세로 리스트 */}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {sorted.map((p,i)=>{
             const mp=minPrice(p);
             const cs=cheapShop(p);
-            const RANKS=["1위","2위","3위","4위","5위"];
-            const RANK_C=["#FF7043","#757575","#C8874A","#888","#aaa"];
+            const RANKS=["🥇","🥈","🥉"];
             return(
-              <div key={p.id} style={{background:"#fff",borderRadius:14,padding:"14px",border:"1px solid #EEE8E0",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  {/* 순위 */}
-                  <div style={{fontSize:13,fontWeight:900,color:RANK_C[i],minWidth:24,textAlign:"center"}}>{RANKS[i]}</div>
-
-                  {/* 상품 정보 */}
+              <div key={p.id} style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1px solid #EEE8E0",boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{fontSize:i<3?18:12,fontWeight:900,color:i===0?"#FF7043":i===1?"#757575":i===2?"#C8874A":"#CCC",minWidth:24,textAlign:"center"}}>
+                    {i<3?RANKS[i]:i+1}
+                  </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#1A1A1A",lineHeight:1.3,marginBottom:3}}>{p.name}</div>
-                    <div style={{fontSize:11,color:"#888",marginBottom:4}}>{p.brand}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:12,fontWeight:900,color:"#FF7043"}}>{mp.toLocaleString()}원~</span>
+                    <div style={{fontSize:14,fontWeight:900,color:"#1A1A1A",lineHeight:1.3,marginBottom:2}}>{p.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:13,fontWeight:900,color:"#FF7043"}}>{mp.toLocaleString()}원~</span>
                       <span style={{fontSize:10,color:"#888"}}>★{p.rating}</span>
+                      <span style={{fontSize:9,color:"#aaa"}}>리뷰 {p.reviews.toLocaleString()}</span>
                       <span style={{fontSize:9,background:"#F5F0EB",color:"#888",borderRadius:4,padding:"1px 5px"}}>{cs}</span>
                     </div>
                   </div>
-
-                  {/* CTA */}
-                  <button onClick={()=>setSelProd(p)} style={{flexShrink:0,background:"#FF7043",color:"#fff",border:"none",borderRadius:10,padding:"10px 14px",fontSize:12,fontWeight:900,cursor:"pointer",boxShadow:"0 3px 10px rgba(255,112,67,0.35)",whiteSpace:"nowrap"}}>
+                  <button onClick={()=>setSelProd(p)} style={{flexShrink:0,background:"#FF7043",color:"#fff",border:"none",borderRadius:10,padding:"9px 13px",fontSize:12,fontWeight:900,cursor:"pointer",boxShadow:"0 3px 10px rgba(255,112,67,0.3)",whiteSpace:"nowrap"}}>
                     바로가기
                   </button>
                 </div>
-                {/* why 한줄 */}
-                {p.why&&<div style={{marginTop:8,padding:"6px 10px",background:"#FAFAFA",borderRadius:8,fontSize:10,color:"#666",lineHeight:1.5}}>
-                  {p.why}
-                </div>}
+                {p.why&&<div style={{marginTop:7,padding:"5px 8px",background:"#FAFAFA",borderRadius:7,fontSize:10,color:"#666",lineHeight:1.5}}>{p.why}</div>}
               </div>
             );
           })}
         </div>
 
-        {/* 하단 배지 */}
-        <div style={{marginTop:16,padding:"10px 14px",background:"#fff",borderRadius:12,border:"1px solid #EEE8E0",display:"flex",alignItems:"center",gap:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#888"}}>쿠팡 · 네이버 · 11번가 · 아마존 · 알리 5개 쇼핑몰 통합 분석</div>
+        <div style={{marginTop:16,padding:"10px 14px",background:"#fff",borderRadius:12,border:"1px solid #EEE8E0"}}>
+          <div style={{fontSize:10,color:"#aaa",textAlign:"center"}}>쿠팡 · 네이버 · 11번가 · 아마존 · 알리 5개 쇼핑몰 통합 분석</div>
         </div>
 
       </div>
@@ -1436,6 +1571,8 @@ export default function App(){
   const [showSteri, setShowSteri] = useState(false);
   const [selProd,   setSelProd]   = useState(null);
   const [toast,     setToast]     = useState(null);
+  const [searchQ,   setSearchQ]   = useState("");
+  const [showSearch,setShowSearch]= useState(false);
 
   useEffect(()=>{const t=setTimeout(()=>setSplash(false),3000);return()=>clearTimeout(t);},[]);
   useEffect(()=>{const m=calcMonth(bday);if(m!==null)setMonth(Math.max(1,Math.min(12,m)));},[bday]);
@@ -1481,23 +1618,32 @@ export default function App(){
 
       {/* TOP BAR */}
       <div style={{background:CA,padding:"9px 14px 8px",borderBottom:`1px solid ${BO}`,flexShrink:0,boxShadow:`0 2px 10px rgba(255,112,67,0.07)`}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setTab("home")} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0}}>
-              <span style={{fontSize:20,animation:"spin 8s linear infinite,float 3s ease-in-out infinite",display:"inline-block"}}>☀️</span>
-              <div>
-                <div style={{fontSize:18,fontWeight:900,letterSpacing:-1,lineHeight:1.1,background:`linear-gradient(135deg,${P},${G},${PINK})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",textAlign:"left"}}>HANA</div>
-                <div style={{fontSize:7,color:MU,letterSpacing:0.3,whiteSpace:"nowrap",textAlign:"left"}}>초보 부모 육아 가이드</div>
-              </div>
-            </button>
-          </div>
-        {user?(
-          <button onClick={()=>setTab("profile")} style={{background:`rgba(255,112,67,0.1)`,border:`1px solid rgba(255,112,67,0.25)`,borderRadius:16,padding:"5px 11px",color:P,fontWeight:800,fontSize:11,cursor:"pointer"}}>{user.name.slice(0,5)} ›</button>
-        ):(
-          <button onClick={()=>setShowAuth(true)} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",borderRadius:16,padding:"6px 13px",color:"#fff",fontWeight:900,fontSize:11,cursor:"pointer"}}>로그인 ✨</button>
-        )}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
+          <button onClick={()=>setTab("home")} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0}}>
+            <span style={{fontSize:20,animation:"spin 8s linear infinite,float 3s ease-in-out infinite",display:"inline-block"}}>☀️</span>
+            <div>
+              <div style={{fontSize:18,fontWeight:900,letterSpacing:-1,lineHeight:1.1,background:`linear-gradient(135deg,${P},${G},${PINK})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>HANA</div>
+              <div style={{fontSize:7,color:MU,letterSpacing:0.3,whiteSpace:"nowrap"}}>초보 부모 육아 가이드</div>
+            </div>
+          </button>
+          {user?(
+            <button onClick={()=>setTab("profile")} style={{background:`rgba(255,112,67,0.1)`,border:`1px solid rgba(255,112,67,0.25)`,borderRadius:16,padding:"5px 11px",color:P,fontWeight:800,fontSize:11,cursor:"pointer"}}>{user.name.slice(0,5)} ›</button>
+          ):(
+            <button onClick={()=>setShowAuth(true)} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",borderRadius:16,padding:"6px 13px",color:"#fff",fontWeight:900,fontSize:11,cursor:"pointer"}}>로그인 ✨</button>
+          )}
         </div>
+        {/* 검색창 */}
+        <form onSubmit={e=>{e.preventDefault();if(searchQ.trim()){setShowSearch(true);}}} style={{display:"flex",gap:6}}>
+          <div style={{flex:1,position:"relative"}}>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:MU}}>🔍</span>
+            <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="어떤 육아용품이든 검색해보세요" style={{width:"100%",background:"#F5F0EB",border:"none",borderRadius:10,padding:"8px 10px 8px 30px",fontSize:12,color:TX,boxSizing:"border-box",outline:"none",fontFamily:"inherit"}}/>
+          </div>
+          <button type="submit" style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:12,fontWeight:900,cursor:"pointer",whiteSpace:"nowrap"}}>검색</button>
+        </form>
       </div>
+
+      {/* 검색 결과 오버레이 */}
+      {showSearch&&searchQ&&<SearchResults q={searchQ} onClose={()=>{setShowSearch(false);setSearchQ("");}}/>}
 
       {/* CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
