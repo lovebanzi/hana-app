@@ -23,15 +23,10 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     const items = (data.items || []).map(item => {
-      let directLink = item.link;
-      if (item.productId && item.productType === '2') {
-        directLink = 'https://smartstore.naver.com/main/products/' + item.productId;
-      } else if (item.productId && item.productType === '1') {
-        directLink = 'https://search.shopping.naver.com/catalog/' + item.productId;
-      }
+      // 원본 link 그대로 사용 (스마트스토어/네이버페이 등 실제 상품 링크)
       return {
         title:       item.title.replace(/<[^>]*>/g, ''),
-        link:        directLink,
+        link:        item.link,  // 원본 링크 그대로
         image:       item.image,
         lprice:      Number(item.lprice) || 0,
         mallName:    item.mallName || '',
