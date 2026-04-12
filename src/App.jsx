@@ -1620,11 +1620,13 @@ function ShopTab({month,setMonth,wish,onWish,setSelProd,activeShops,setActiveSho
    GUIDE TAB — 클릭 즉시 내용 펼쳐짐
 ════════════════════════════════════════════════════ */
 function GuideTab(){
-  const [openId,setOpenId]=useState(null);
+  const [openId,setOpenId]=useState("g1"); // 첫번째 기본 오픈
   return(
     <div style={{overflowY:"auto",flex:1,background:"#FAFAFA",padding:"14px 14px 28px"}}>
-      <div style={{fontSize:18,fontWeight:900,color:"#1A1A1A",marginBottom:3,letterSpacing:-0.5}}>육아 가이드</div>
-      <div style={{fontSize:12,color:"#888",marginBottom:14}}>탭하면 바로 내용이 펼쳐져요</div>
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:20,fontWeight:900,color:"#1A1A1A",marginBottom:3,letterSpacing:-0.5}}>육아 가이드 📚</div>
+        <div style={{fontSize:12,color:"#888"}}>초보 부모를 위한 완전 가이드 · 탭하면 바로 내용이 펼쳐져요</div>
+      </div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {GUIDES.map(g=>{
           const isOpen=openId===g.id;
@@ -1690,85 +1692,152 @@ function GuideTab(){
 /* ═══════════════════════════════════════════════════
    PROFILE TAB
 ════════════════════════════════════════════════════ */
-function ProfileTab({user,setShowAuth,setUser,wish,checks,setChecks,babyName,setBabyName,bday,setBday}){
-  const [showCL,setShowCL]=useState(false),[editBaby,setEditBaby]=useState(false),[tmpName,setTmpName]=useState(babyName),[tmpBday,setTmpBday]=useState(bday);
+function ProfileTab({user,setShowAuth,setUser,wish,setWish,checks,setChecks,babyName,setBabyName,bday,setBday,setTab}){
+  const [showCL,setShowCL]=useState(false);
+  const [editBaby,setEditBaby]=useState(!bday); // 아기 정보 없으면 바로 입력 모드
+  const [tmpName,setTmpName]=useState(babyName);
+  const [tmpBday,setTmpBday]=useState(bday);
   const doneCnt=CHECKLIST.filter(c=>checks[c.id]).length;
+  const pct=Math.round(doneCnt/CHECKLIST.length*100);
   const autoMonth=calcMonth(bday);
 
   if(showCL)return(
     <div style={{display:"flex",flexDirection:"column",flex:1,overflow:"hidden"}}>
-      <div style={{background:CA,padding:"11px 14px 9px",borderBottom:`1px solid ${BO}`,display:"flex",alignItems:"center",gap:9,flexShrink:0}}>
-        <button onClick={()=>setShowCL(false)} style={{background:"none",border:"none",color:MU,fontSize:15,cursor:"pointer",padding:0}}>←</button>
-        <span style={{fontSize:14,fontWeight:900,color:TX}}>육아용품 체크리스트</span>
+      <div style={{background:"#fff",padding:"12px 16px 10px",borderBottom:"1px solid #EEE8E0",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+        <button onClick={()=>setShowCL(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#888",padding:0}}>←</button>
+        <span style={{fontSize:15,fontWeight:900,color:"#1A1A1A"}}>육아용품 체크리스트</span>
+        <span style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:"#FF7043"}}>{doneCnt}/{CHECKLIST.length}</span>
       </div>
       <ChecklistView checks={checks} setChecks={setChecks}/>
     </div>
   );
 
   if(!user)return(
-    <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:12,background:BG}}>
-      <div style={{fontSize:56,animation:"bounce 2s infinite"}}>👶</div>
-      <div style={{fontSize:18,fontWeight:900,color:TX}}>HANA 가족이 되어보세요!</div>
-      <div style={{fontSize:12,color:MU,textAlign:"center",lineHeight:1.7}}>찜 목록, 체크리스트,<br/>아기 정보까지 무료!</div>
-      <button onClick={()=>setShowAuth(true)} style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:14,padding:"13px 36px",fontSize:14,fontWeight:900,cursor:"pointer"}}>로그인 / 회원가입 →</button>
+    <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,gap:16,background:"#FAFAFA"}}>
+      <div style={{fontSize:72,animation:"bounce 2s infinite"}}>👶</div>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:20,fontWeight:900,color:"#1A1A1A",marginBottom:6}}>HANA 가족이 되어보세요!</div>
+        <div style={{fontSize:13,color:"#888",lineHeight:1.7}}>아기 정보 저장, 찜 목록,<br/>체크리스트까지 무료로!</div>
+      </div>
+      <button onClick={()=>setShowAuth(true)} style={{background:"#FF7043",color:"#fff",border:"none",borderRadius:14,padding:"14px 40px",fontSize:15,fontWeight:900,cursor:"pointer",boxShadow:"0 6px 20px rgba(255,112,67,0.35)"}}>
+        로그인 / 회원가입 →
+      </button>
     </div>
   );
 
   return(
-    <div style={{flex:1,overflowY:"auto",background:BG,paddingBottom:20}}>
-      <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6)",padding:"16px 14px 14px",borderBottom:`1px solid ${BO}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:12}}>
-          <div style={{width:46,height:46,borderRadius:23,background:`linear-gradient(135deg,${P},${G})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,color:"#fff",fontWeight:900}}>{user.name[0]}</div>
+    <div style={{flex:1,overflowY:"auto",background:"#FAFAFA",paddingBottom:24}}>
+
+      {/* 프로필 헤더 */}
+      <div style={{background:"linear-gradient(135deg,#FF7043,#FFB347)",padding:"20px 16px 24px",color:"#fff"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          <div style={{width:52,height:52,borderRadius:26,background:"rgba(255,255,255,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,backdropFilter:"blur(10px)"}}>
+            {user.name[0]}
+          </div>
           <div>
-            <div style={{fontSize:14,fontWeight:900,color:TX}}>{user.name}님 👋</div>
-            <div style={{fontSize:10,color:MU}}>{user.email}</div>
-            <div style={{display:"inline-block",marginTop:3,background:`linear-gradient(135deg,${P},${G})`,color:"#fff",borderRadius:7,padding:"1px 8px",fontSize:9,fontWeight:800}}>🌟 HANA 가족</div>
+            <div style={{fontSize:17,fontWeight:900}}>{user.name}님 안녕하세요! 👋</div>
+            <div style={{fontSize:11,opacity:0.85,marginTop:2}}>{user.email}</div>
           </div>
         </div>
-        {/* 아기 정보 */}
-        <div style={{background:"rgba(255,255,255,0.75)",borderRadius:13,padding:"11px 12px",marginBottom:10,border:`1px solid rgba(255,112,67,0.15)`}}>
+
+        {/* 체크리스트 진행바 */}
+        <div style={{background:"rgba(255,255,255,0.2)",borderRadius:12,padding:"10px 12px",cursor:"pointer"}} onClick={()=>setShowCL(true)}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{fontSize:11,fontWeight:700}}>✅ 육아용품 체크리스트</span>
+            <span style={{fontSize:11,fontWeight:900}}>{doneCnt}/{CHECKLIST.length}개</span>
+          </div>
+          <div style={{height:6,borderRadius:9,background:"rgba(255,255,255,0.3)",overflow:"hidden"}}>
+            <div style={{width:`${pct}%`,height:"100%",borderRadius:9,background:"#fff",transition:"width 0.3s"}}/>
+          </div>
+          <div style={{fontSize:9,marginTop:4,opacity:0.85}}>
+            {pct===100?"🎉 모두 준비됐어요!":pct>=50?"👍 절반 이상 완료!":"💪 탭해서 체크하기 →"}
+          </div>
+        </div>
+      </div>
+
+      <div style={{padding:"16px 14px",display:"flex",flexDirection:"column",gap:12}}>
+
+        {/* 아기 정보 카드 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1px solid #EEE8E0",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:900,color:"#1A1A1A"}}>👶 아기 정보</div>
+            {!editBaby&&bday&&<button onClick={()=>{setTmpName(babyName);setTmpBday(bday);setEditBaby(true);}} style={{fontSize:11,color:"#FF7043",background:"none",border:"1px solid #FF7043",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontWeight:700}}>수정</button>}
+          </div>
+
           {editBaby?(
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:P,marginBottom:7}}>👶 아기 정보 수정</div>
-              <input value={tmpName} onChange={e=>setTmpName(e.target.value)} placeholder="아기 이름" style={{width:"100%",border:`1px solid ${BO}`,borderRadius:9,padding:"8px 11px",fontSize:13,color:TX,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:7,background:BG}}/>
-              <input value={tmpBday} onChange={e=>setTmpBday(e.target.value)} type="date" style={{width:"100%",border:`1px solid ${BO}`,borderRadius:9,padding:"8px 11px",fontSize:13,color:TX,boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:9,background:BG}}/>
-              <div style={{display:"flex",gap:6}}>
-                <button onClick={()=>{setBabyName(tmpName);setBday(tmpBday);setEditBaby(false);}} style={{flex:1,background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:9,padding:"8px",fontSize:12,fontWeight:800,cursor:"pointer"}}>저장</button>
-                <button onClick={()=>setEditBaby(false)} style={{flex:1,background:BG,color:MU,border:`1px solid ${BO}`,borderRadius:9,padding:"8px",fontSize:12,fontWeight:700,cursor:"pointer"}}>취소</button>
+              <input value={tmpName} onChange={e=>setTmpName(e.target.value)} placeholder="아기 이름 (예: 하나)" style={{width:"100%",border:"1.5px solid #EEE8E0",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#1A1A1A",boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:8,background:"#FAFAFA"}}/>
+              <div style={{fontSize:10,color:"#888",marginBottom:4}}>생년월일</div>
+              <input value={tmpBday} onChange={e=>setTmpBday(e.target.value)} type="date" style={{width:"100%",border:"1.5px solid #EEE8E0",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#1A1A1A",boxSizing:"border-box",outline:"none",fontFamily:"inherit",marginBottom:12,background:"#FAFAFA"}}/>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{setBabyName(tmpName);setBday(tmpBday);setEditBaby(false);}} style={{flex:1,background:"#FF7043",color:"#fff",border:"none",borderRadius:10,padding:"10px",fontSize:13,fontWeight:900,cursor:"pointer"}}>저장</button>
+                {bday&&<button onClick={()=>setEditBaby(false)} style={{flex:1,background:"#F5F0EB",color:"#888",border:"none",borderRadius:10,padding:"10px",fontSize:13,fontWeight:700,cursor:"pointer"}}>취소</button>}
               </div>
             </div>
           ):(
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:800,color:MU,marginBottom:3}}>👶 아기 정보</div>
-                {bday?(<div><div style={{fontSize:13,fontWeight:900,color:TX}}>{babyName||"아기"} · {autoMonth}개월</div><div style={{fontSize:10,color:MU}}>{bday} 출생</div></div>):(<div style={{fontSize:11,color:MU}}>생년월일을 입력하면<br/>개월 수를 자동 계산해드려요!</div>)}
+            bday?(
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{width:56,height:56,borderRadius:28,background:"linear-gradient(135deg,#FFF0E8,#FFE4D0)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,border:"2px solid #FFD0B0"}}>👶</div>
+                <div>
+                  <div style={{fontSize:18,fontWeight:900,color:"#1A1A1A"}}>{babyName||"아기"}</div>
+                  <div style={{fontSize:13,color:"#FF7043",fontWeight:700,marginTop:2}}>🌟 {autoMonth}개월</div>
+                  <div style={{fontSize:10,color:"#888",marginTop:1}}>{new Date(bday).toLocaleDateString("ko-KR")} 출생</div>
+                </div>
               </div>
-              <button onClick={()=>{setTmpName(babyName);setTmpBday(bday);setEditBaby(true);}} style={{background:BG,border:`1px solid ${BO}`,borderRadius:9,padding:"6px 11px",fontSize:10,fontWeight:700,color:P,cursor:"pointer"}}>{bday?"수정":"입력"}</button>
+            ):(
+              <button onClick={()=>setEditBaby(true)} style={{width:"100%",background:"#FFF0E8",border:"1.5px dashed #FFB347",borderRadius:10,padding:"16px",cursor:"pointer",color:"#FF7043",fontWeight:700,fontSize:13}}>
+                + 아기 정보 입력하기
+              </button>
+            )
+          )}
+        </div>
+
+        {/* 찜 목록 */}
+        <div style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:"1px solid #EEE8E0",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontSize:14,fontWeight:900,color:"#1A1A1A"}}>❤️ 찜 목록</div>
+              <div style={{fontSize:11,color:"#888",marginTop:2}}>{wish.length}개 저장됨</div>
+            </div>
+            {wish.length>0&&<button onClick={()=>setTab("wish")} style={{fontSize:11,color:"#FF7043",background:"none",border:"1px solid #FF7043",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontWeight:700}}>보기 →</button>}
+          </div>
+          {wish.length>0&&(
+            <div style={{display:"flex",gap:6,marginTop:10,overflowX:"auto",scrollbarWidth:"none"}}>
+              {wish.slice(0,4).map(p=>(
+                <div key={p.id} style={{flexShrink:0,width:52,height:52,borderRadius:10,background:"#F5F0EB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,border:"1px solid #EEE8E0"}}>
+                  {p.img}
+                </div>
+              ))}
+              {wish.length>4&&<div style={{flexShrink:0,width:52,height:52,borderRadius:10,background:"#F5F0EB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#888",fontWeight:700,border:"1px solid #EEE8E0"}}>+{wish.length-4}</div>}
             </div>
           )}
         </div>
-        {/* 체크리스트 미니 */}
-        <div style={{background:"rgba(255,255,255,0.75)",borderRadius:12,padding:"9px 11px",cursor:"pointer",border:`1px solid rgba(255,112,67,0.12)`}} onClick={()=>setShowCL(true)}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:10,fontWeight:700,color:TX}}>✅ 육아용품 체크리스트</span><span style={{fontSize:10,fontWeight:900,color:P}}>{doneCnt}/{CHECKLIST.length}</span></div>
-          <div style={{height:5,borderRadius:9,background:"rgba(255,112,67,0.12)",overflow:"hidden"}}><div style={{width:`${Math.round(doneCnt/CHECKLIST.length*100)}%`,height:"100%",borderRadius:9,background:`linear-gradient(90deg,${P},${G})`}}/></div>
-          <div style={{fontSize:9,color:P,marginTop:3,fontWeight:700}}>탭해서 체크하기 →</div>
+
+        {/* 메뉴 */}
+        <div style={{background:"#fff",borderRadius:16,border:"1px solid #EEE8E0",overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+          {[
+            {e:"✅",l:"체크리스트",s:`${doneCnt}/${CHECKLIST.length}개 완료`,cb:()=>setShowCL(true)},
+            {e:"📚",l:"육아 가이드",s:"수유·이유식·수면·발달",cb:()=>setTab("guide")},
+            {e:"🛍️",l:"쇼핑하기",s:"개월별 추천 상품",cb:()=>setTab("shop")},
+            {e:"🔔",l:"가격 알림",s:"쿠팡 API 연동 후 제공 예정",cb:null},
+          ].map(({e,l,s,cb},i,arr)=>(
+            <button key={l} onClick={cb||undefined} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:i<arr.length-1?"1px solid #F5F0EB":"none",cursor:cb?"pointer":"default",textAlign:"left",width:"100%",boxSizing:"border-box"}}>
+              <span style={{fontSize:20}}>{e}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:cb?"#1A1A1A":"#CCC"}}>{l}</div>
+                <div style={{fontSize:10,color:"#aaa"}}>{s}</div>
+              </div>
+              {cb&&<span style={{color:"#CCC",fontSize:16}}>›</span>}
+            </button>
+          ))}
         </div>
-      </div>
-      <div style={{padding:"12px 12px 0",display:"flex",flexDirection:"column",gap:6}}>
-        {[
-          {e:"✅",l:"육아용품 체크리스트",s:`${doneCnt}/${CHECKLIST.length}개 완료`,hi:true,cb:()=>setShowCL(true)},
-          {e:"❤️",l:"찜 목록",s:`${wish.length}개 저장됨`,cb:null},
-          {e:"🔔",l:"가격 알림",s:"할인·가격 변동 알림",cb:null},
-          {e:"📚",l:"육아 가이드",s:"수유·이유식·수면·발달",cb:null},
-          {e:"💬",l:"고객센터",s:"문의·도움말",cb:null},
-        ].map(({e,l,s,hi,cb})=>(
-          <button key={l} onClick={cb||undefined} style={{display:"flex",alignItems:"center",gap:11,padding:"11px 12px",background:hi?"rgba(255,112,67,0.06)":CA,borderRadius:13,border:hi?`1px solid rgba(255,112,67,0.2)`:`1px solid ${BO}`,cursor:cb?"pointer":"default",textAlign:"left",width:"100%",boxSizing:"border-box"}}>
-            <span style={{fontSize:18}}>{e}</span>
-            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:hi?P:TX}}>{l}</div><div style={{fontSize:9,color:MU}}>{s}</div></div>
-            {cb&&<span style={{color:MU}}>›</span>}
-          </button>
-        ))}
-        <button onClick={()=>setUser(null)} style={{width:"100%",background:CA,border:"1px solid #FFCDD2",borderRadius:13,padding:"11px",fontSize:12,fontWeight:700,color:"#D32F2F",cursor:"pointer",boxSizing:"border-box"}}>로그아웃</button>
+
+        {/* 로그아웃 */}
+        <button onClick={()=>setUser(null)} style={{width:"100%",background:"#fff",border:"1px solid #FFCDD2",borderRadius:14,padding:"12px",fontSize:13,fontWeight:700,color:"#E53935",cursor:"pointer",boxSizing:"border-box"}}>
+          로그아웃
+        </button>
+
+        <div style={{textAlign:"center",fontSize:9,color:"#CCC"}}>HANA v1.0 · 쿠팡 API 연동 준비중</div>
       </div>
     </div>
   );
@@ -1782,12 +1851,12 @@ export default function App(){
   const [month,     setMonth]     = useState(1);
   const [tab,       setTab]       = useState("home");
   const [shopCat,   setShopCat]   = useState("전체");
-  const [wish,      setWish]      = useState([]);
-  const [checks,    setChecks]    = useState({});
-  const [user,      setUser]      = useState(null);
-  const [babyName,  setBabyName]  = useState("");
-  const [bday,      setBday]      = useState("");
-  const [activeShops,setActiveShops]=useState([]); // 빈배열=전체
+  const [wish,      setWish]      = useState(()=>{try{return JSON.parse(localStorage.getItem("hana_wish")||"[]")}catch{return[]}});
+  const [checks,    setChecks]    = useState(()=>{try{return JSON.parse(localStorage.getItem("hana_checks")||"{}")}catch{return{}}});
+  const [user,      setUser]      = useState(()=>{try{return JSON.parse(localStorage.getItem("hana_user")||"null")}catch{return null}});
+  const [babyName,  setBabyName]  = useState(()=>localStorage.getItem("hana_babyName")||"");
+  const [bday,      setBday]      = useState(()=>localStorage.getItem("hana_bday")||"");
+  const [activeShops,setActiveShops]=useState([]);
   const [showWish,  setShowWish]  = useState(false);
   const [showAuth,  setShowAuth]  = useState(false);
   const [showEss,   setShowEss]   = useState(false);
@@ -1797,7 +1866,14 @@ export default function App(){
   const [searchQ,   setSearchQ]   = useState("");
   const [showSearch,setShowSearch]= useState(false);
 
-  useEffect(()=>{const t=setTimeout(()=>setSplash(false),3000);return()=>clearTimeout(t);},[]);
+  // 로컬 저장
+  useEffect(()=>{localStorage.setItem("hana_wish",JSON.stringify(wish));},[wish]);
+  useEffect(()=>{localStorage.setItem("hana_checks",JSON.stringify(checks));},[checks]);
+  useEffect(()=>{if(user)localStorage.setItem("hana_user",JSON.stringify(user));else localStorage.removeItem("hana_user");},[user]);
+  useEffect(()=>{localStorage.setItem("hana_babyName",babyName);},[babyName]);
+  useEffect(()=>{localStorage.setItem("hana_bday",bday);},[bday]);
+
+  useEffect(()=>{const t=setTimeout(()=>setSplash(false),2500);return()=>clearTimeout(t);},[]);
   useEffect(()=>{const m=calcMonth(bday);if(m!==null)setMonth(Math.max(1,Math.min(12,m)));},[bday]);
 
   function fire(msg){setToast(msg);setTimeout(()=>setToast(null),1800);}
@@ -1808,64 +1884,61 @@ export default function App(){
     if(t==="home_steri"){setShowSteri(true);return;}
     if(t.startsWith("shop_cat_")){
       const catName=t.replace("shop_cat_","");
-      setShopCat(catName);  // 먼저 카테고리 설정
-      setTimeout(()=>setTab("shop"),0);  // 다음 틱에 탭 전환 (state 확실히 반영)
+      setShopCat(catName);
+      setTimeout(()=>setTab("shop"),0);
       return;
     }
     setTab(t);
   }
 
+  const autoMonth=calcMonth(bday);
   const NAV=[
-    {id:"home",  icon:"🏠", label:"홈"},
-    {id:"shop",  icon:"🛍️", label:"쇼핑"},
-    {id:"guide", icon:"📚", label:"가이드"},
-    {id:"wish",  icon:"❤️", label:"찜", badge:wish.length},
-    {id:"profile",icon:"👤",label:"마이"},
+    {id:"home",   icon:"🏠", label:"홈"},
+    {id:"shop",   icon:"🛍️", label:"쇼핑"},
+    {id:"guide",  icon:"📚", label:"가이드"},
+    {id:"wish",   icon:"❤️", label:"찜", badge:wish.length},
+    {id:"profile",icon:"👤", label:"마이"},
   ];
   function handleNav(id){if(id==="wish"){setShowWish(true);return;}setTab(id);}
 
   return(
-    <div style={{
-      fontFamily:"'Noto Sans KR','Apple SD Gothic Neo',sans-serif",
-      background:BG,
-      width:"100%",
-      maxWidth:480,
-      margin:"0 auto",
-      display:"flex",
-      flexDirection:"column",
-      height:"100dvh",
-      overflow:"hidden",
-      position:"relative",
-    }}>
+    <div style={{fontFamily:"'Noto Sans KR','Apple SD Gothic Neo',sans-serif",background:"#FFF8F2",width:"100%",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column",height:"100dvh",overflow:"hidden",position:"relative"}}>
       {splash&&<Splash/>}
 
       {/* TOP BAR */}
-      <div style={{background:CA,padding:"9px 14px 8px",borderBottom:`1px solid ${BO}`,flexShrink:0,boxShadow:`0 2px 10px rgba(255,112,67,0.07)`}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
+      <div style={{background:"#fff",padding:"10px 14px 9px",borderBottom:"1px solid #FFE0C8",flexShrink:0,boxShadow:"0 2px 12px rgba(255,112,67,0.08)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
           <button onClick={()=>setTab("home")} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0}}>
-            <span style={{fontSize:20,animation:"spin 8s linear infinite,float 3s ease-in-out infinite",display:"inline-block"}}>☀️</span>
+            <span style={{fontSize:22,display:"inline-block",animation:"float 3s ease-in-out infinite"}}>☀️</span>
             <div>
-              <div style={{fontSize:18,fontWeight:900,letterSpacing:-1,lineHeight:1.1,background:`linear-gradient(135deg,${P},${G},${PINK})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>HANA</div>
-              <div style={{fontSize:7,color:MU,letterSpacing:0.3,whiteSpace:"nowrap"}}>초보 부모 육아 가이드</div>
+              <div style={{fontSize:20,fontWeight:900,letterSpacing:-1,lineHeight:1,background:"linear-gradient(135deg,#FF7043,#FFB347,#FF85A1)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>HANA</div>
+              <div style={{fontSize:7,color:"#B09080",letterSpacing:0.5}}>초보 부모 육아 가이드</div>
             </div>
           </button>
-          {user?(
-            <button onClick={()=>setTab("profile")} style={{background:`rgba(255,112,67,0.1)`,border:`1px solid rgba(255,112,67,0.25)`,borderRadius:16,padding:"5px 11px",color:P,fontWeight:800,fontSize:11,cursor:"pointer"}}>{user.name.slice(0,5)} ›</button>
-          ):(
-            <button onClick={()=>setShowAuth(true)} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",borderRadius:16,padding:"6px 13px",color:"#fff",fontWeight:900,fontSize:11,cursor:"pointer"}}>로그인 ✨</button>
-          )}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {bday&&autoMonth!==null&&(
+              <div style={{background:"linear-gradient(135deg,#FFF0E8,#FFE4D0)",border:"1px solid #FFD0B0",borderRadius:12,padding:"4px 10px",textAlign:"center"}}>
+                <div style={{fontSize:8,color:"#B09080"}}>우리 아기</div>
+                <div style={{fontSize:11,fontWeight:900,color:"#FF7043"}}>{babyName||"아기"} {autoMonth}개월</div>
+              </div>
+            )}
+            {user?(
+              <button onClick={()=>setTab("profile")} style={{background:"rgba(255,112,67,0.1)",border:"1px solid rgba(255,112,67,0.25)",borderRadius:16,padding:"5px 11px",color:"#FF7043",fontWeight:800,fontSize:11,cursor:"pointer"}}>{user.name.slice(0,4)} ›</button>
+            ):(
+              <button onClick={()=>setShowAuth(true)} style={{background:"linear-gradient(135deg,#FF7043,#FFB347)",border:"none",borderRadius:16,padding:"6px 13px",color:"#fff",fontWeight:900,fontSize:11,cursor:"pointer"}}>로그인 ✨</button>
+            )}
+          </div>
         </div>
         {/* 검색창 */}
-        <form onSubmit={e=>{e.preventDefault();if(searchQ.trim()){setShowSearch(true);}}} style={{display:"flex",gap:6}}>
+        <form onSubmit={e=>{e.preventDefault();if(searchQ.trim())setShowSearch(true);}} style={{display:"flex",gap:6}}>
           <div style={{flex:1,position:"relative"}}>
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:MU}}>🔍</span>
-            <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="어떤 육아용품이든 검색해보세요" style={{width:"100%",background:"#F5F0EB",border:"none",borderRadius:10,padding:"8px 10px 8px 30px",fontSize:12,color:TX,boxSizing:"border-box",outline:"none",fontFamily:"inherit"}}/>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#B09080"}}>🔍</span>
+            <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="어떤 육아용품이든 검색해보세요" style={{width:"100%",background:"#F5F0EB",border:"none",borderRadius:10,padding:"9px 10px 9px 30px",fontSize:12,color:"#2D1B12",boxSizing:"border-box",outline:"none",fontFamily:"inherit"}}/>
           </div>
-          <button type="submit" style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:12,fontWeight:900,cursor:"pointer",whiteSpace:"nowrap"}}>검색</button>
+          <button type="submit" style={{background:"linear-gradient(135deg,#FF7043,#FFB347)",color:"#fff",border:"none",borderRadius:10,padding:"9px 14px",fontSize:12,fontWeight:900,cursor:"pointer"}}>검색</button>
         </form>
       </div>
 
-      {/* 검색 결과 오버레이 */}
       {showSearch&&searchQ&&<SearchResults q={searchQ} onClose={()=>{setShowSearch(false);setSearchQ("");}}/>}
 
       {/* CONTENT */}
@@ -1873,65 +1946,59 @@ export default function App(){
         {tab==="home"    &&<HomeTab    month={month} setMonth={setMonth} bday={bday} babyName={babyName} wish={wish} onWish={toggleWish} setTab={handleTabFromHome} setSelProd={setSelProd} activeShops={activeShops}/>}
         {tab==="shop"    &&<ShopTab    month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} setSelProd={setSelProd} activeShops={activeShops} setActiveShops={setActiveShops} initCat={shopCat} setShopCat={setShopCat}/>}
         {tab==="guide"   &&<GuideTab/>}
-        {tab==="profile" &&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
+        {tab==="profile" &&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} setWish={setWish} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday} setTab={setTab}/>}
       </div>
 
       {/* BOTTOM NAV */}
-      <div style={{background:CA,borderTop:`1px solid ${BO}`,display:"flex",paddingBottom:"env(safe-area-inset-bottom,4px)",flexShrink:0,boxShadow:`0 -2px 12px rgba(0,0,0,0.05)`}}>
+      <div style={{background:"#fff",borderTop:"1px solid #F0E8E0",display:"flex",paddingBottom:"env(safe-area-inset-bottom,6px)",flexShrink:0,boxShadow:"0 -4px 20px rgba(0,0,0,0.07)"}}>
         {NAV.map(({id,icon,label,badge})=>{
           const active=(id!=="wish")&&tab===id;
           return(
             <button key={id} onClick={()=>handleNav(id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"8px 0 4px",display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}}>
-              <div style={{position:"relative"}}>
-                <span style={{fontSize:20,opacity:active?1:0.4,transition:"opacity .2s",display:"inline-block",animation:active?`bounceSoft 2s ease-in-out infinite`:"none"}}>{icon}</span>
-                {badge>0&&<span style={{position:"absolute",top:-3,right:-5,background:`linear-gradient(135deg,${P},${G})`,color:"#fff",borderRadius:99,fontSize:7,fontWeight:900,padding:"1px 4px",minWidth:13,textAlign:"center",animation:"heartBeat 1.5s ease-in-out infinite"}}>{badge}</span>}
+              <div style={{position:"relative",width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:12,background:active?"rgba(255,112,67,0.12)":"transparent",transition:"all .2s"}}>
+                <span style={{fontSize:20,display:"inline-block",transition:"transform .2s",transform:active?"scale(1.2)":"scale(1)"}}>{icon}</span>
+                {badge>0&&<span style={{position:"absolute",top:-2,right:-4,background:"#FF7043",color:"#fff",borderRadius:99,fontSize:7,fontWeight:900,padding:"1px 4px",minWidth:14,textAlign:"center"}}>{badge}</span>}
               </div>
-              <span style={{fontSize:9,fontWeight:active?900:500,color:active?P:MU,transition:"color .2s"}}>{label}</span>
-              {active&&<div style={{position:"absolute",bottom:0,width:20,height:2.5,borderRadius:3,background:`linear-gradient(135deg,${P},${G})`,animation:"popIn .2s ease"}}/>}
+              <span style={{fontSize:9,fontWeight:active?900:500,color:active?"#FF7043":"#BBB",transition:"all .2s"}}>{label}</span>
+              {active&&<div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:24,height:3,borderRadius:"0 0 3px 3px",background:"#FF7043"}}/>}
             </button>
           );
         })}
       </div>
 
       {/* SHEETS */}
-      {selProd&&<ProductDetail p={selProd} wished={!!wish.find(w=>w.id===selProd.id)} onWish={toggleWish} onClose={()=>setSelProd(null)} activeShops={activeShops}/>}
-      {showEss &&<EssSheet month={month} onClose={()=>setShowEss(false)} checks={checks} setChecks={setChecks} activeShops={activeShops}/>}
+      {selProd  &&<ProductDetail p={selProd} wished={!!wish.find(w=>w.id===selProd.id)} onWish={toggleWish} onClose={()=>setSelProd(null)} activeShops={activeShops}/>}
+      {showEss  &&<EssSheet month={month} onClose={()=>setShowEss(false)} checks={checks} setChecks={setChecks} activeShops={activeShops}/>}
       {showSteri&&<SterilizeSheet onClose={()=>setShowSteri(false)} activeShops={activeShops}/>}
-      {showWish&&<WishSheet wish={wish} setWish={setWish} onClose={()=>setShowWish(false)} activeShops={activeShops}/>}
-      {showAuth&&<AuthModal onClose={()=>setShowAuth(false)} onLogin={u=>{setUser(u);fire(`✨ 환영해요, ${u.name}님!`);}}/>}
+      {showWish &&<WishSheet wish={wish} setWish={setWish} onClose={()=>setShowWish(false)} activeShops={activeShops}/>}
+      {showAuth &&<AuthModal onClose={()=>setShowAuth(false)} onLogin={u=>{setUser(u);fire(`✨ 환영해요, ${u.name}님!`);}}/>}
 
-      {toast&&<div style={{position:"fixed",bottom:72,left:"50%",transform:"translateX(-50%)",background:`linear-gradient(135deg,${P},${G})`,color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:12,fontWeight:900,zIndex:800,whiteSpace:"nowrap",pointerEvents:"none",animation:"toastIn .25s cubic-bezier(0.34,1.56,0.64,1)",boxShadow:`0 6px 20px rgba(255,112,67,0.45)`}}>{toast}</div>}
+      {toast&&<div style={{position:"fixed",bottom:76,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#FF7043,#FFB347)",color:"#fff",borderRadius:20,padding:"10px 22px",fontSize:13,fontWeight:900,zIndex:800,whiteSpace:"nowrap",pointerEvents:"none",animation:"toastIn .3s cubic-bezier(0.34,1.56,0.64,1)",boxShadow:"0 8px 24px rgba(255,112,67,0.4)"}}>{toast}</div>}
 
       <style>{`
-        @keyframes splashOut  { to{opacity:0;pointer-events:none} }
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');
-        @keyframes spinBounce { 0%{transform:scale(0)rotate(-180deg)} 70%{transform:scale(1.1)rotate(8deg)} 100%{transform:scale(1)rotate(0)} }
-        @keyframes fadeUp     { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes fadeIn     { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
-        @keyframes floatUp    { 0%{transform:translateY(0)rotate(0);opacity:.4} 100%{transform:translateY(-110vh)rotate(360deg);opacity:0} }
-        @keyframes wobble     { 0%,100%{transform:rotate(-4deg)scale(1)} 50%{transform:rotate(4deg)scale(1.05)} }
-        @keyframes bounce     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes float      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes bounce     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
         @keyframes bounceSoft { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
         @keyframes pulse      { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(0.95)} }
-        @keyframes pulseBig   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
         @keyframes spin       { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-        @keyframes spinSlow   { from{transform:rotate(0)} to{transform:rotate(360deg)} }
         @keyframes sheetUp    { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes toastIn    { from{opacity:0;transform:translateX(-50%)translateY(12px)scale(0.9)} to{opacity:1;transform:translateX(-50%)translateY(0)scale(1)} }
-        @keyframes heartBeat  { 0%,100%{transform:scale(1)} 14%{transform:scale(1.15)} 28%{transform:scale(1)} 42%{transform:scale(1.1)} 70%{transform:scale(1)} }
-        @keyframes rainbow    { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
-        @keyframes slideInLeft{ from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes fadeUp     { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn     { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+        @keyframes toastIn    { from{opacity:0;transform:translateX(-50%)translateY(10px)scale(0.9)} to{opacity:1;transform:translateX(-50%)translateY(0)scale(1)} }
+        @keyframes heartBeat  { 0%,100%{transform:scale(1)} 14%{transform:scale(1.2)} 28%{transform:scale(1)} }
         @keyframes popIn      { 0%{opacity:0;transform:scale(0.7)} 70%{transform:scale(1.08)} 100%{opacity:1;transform:scale(1)} }
-        @keyframes starTwinkle{ 0%,100%{opacity:1;transform:scale(1)rotate(0)} 50%{opacity:0.6;transform:scale(0.85)rotate(15deg)} }
-        @keyframes float      { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-6px)} }
-        ::-webkit-scrollbar   { display:none }
-        .hscroll::-webkit-scrollbar { display:none }
-        .hscroll { -webkit-overflow-scrolling:touch; overflow-x:scroll !important; }
-        *                     { -webkit-tap-highlight-color:transparent;box-sizing:border-box }
-        input::placeholder    { color:#C4A58A }
-        button                { font-family:inherit }
-        .baby-card:active     { transform:scale(0.97);transition:transform 0.1s }
-        .buy-btn:active       { transform:scale(0.93);transition:transform 0.1s }
+        @keyframes splashOut  { to{opacity:0;pointer-events:none} }
+        @keyframes floatUp    { 0%{transform:translateY(0)rotate(0);opacity:.4} 100%{transform:translateY(-110vh)rotate(360deg);opacity:0} }
+        @keyframes spinBounce { 0%{transform:scale(0)rotate(-180deg)} 70%{transform:scale(1.1)rotate(8deg)} 100%{transform:scale(1)rotate(0)} }
+        @keyframes starTwinkle{ 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+        @keyframes wobble     { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
+        @keyframes slideInLeft{ from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
+        ::-webkit-scrollbar{display:none}
+        .hscroll::-webkit-scrollbar{display:none}
+        .hscroll{-webkit-overflow-scrolling:touch;overflow-x:scroll!important}
+        *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+        input::placeholder{color:#C4A58A}
+        button{font-family:inherit}
       `}</style>
     </div>
   );
