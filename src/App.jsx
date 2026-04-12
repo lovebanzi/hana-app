@@ -1410,49 +1410,101 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {naverItems.map((item,i)=>{
               const RANKS=["🥇","🥈","🥉"];
+
+              // 정렬 기준별 강조 지표
+              const sortInfo=
+                sortBy==="score"?{
+                  icon:"📊", label:"종합",
+                  value:`리뷰 ${item.reviewCount?.toLocaleString()||0}개 · 판매지수 ${item.score?.toLocaleString()||0}`,
+                  color:"#FF7043"
+                }:sortBy==="sales"?{
+                  icon:"🔥", label:"판매지수",
+                  value:item.score>0?`${item.score?.toLocaleString()}점`:"정보없음",
+                  sub:"※ 네이버 판매 지수 기준",
+                  color:"#E65100"
+                }:sortBy==="reviews"?{
+                  icon:"💬", label:"총 리뷰수",
+                  value:item.reviewCount>0?`${item.reviewCount?.toLocaleString()}개`:"리뷰없음",
+                  sub:"※ 별점별 상세리뷰는 상품 클릭 후 확인",
+                  color:"#1565C0"
+                }:{
+                  icon:"⭐", label:"별점",
+                  value:"상품 페이지에서 확인",
+                  sub:"※ 네이버 API는 별점 미제공 → 클릭 후 확인",
+                  color:"#F57F17"
+                };
+
               return(
                 <div
                   key={i}
                   onClick={()=>window.open(item.link,"_blank")}
-                  style={{background:"#fff",borderRadius:14,padding:"14px",border:"1px solid #EEE8E0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",cursor:"pointer",display:"flex",gap:12,alignItems:"center",transition:"transform .1s",userSelect:"none"}}
+                  style={{background:"#fff",borderRadius:14,border:"1px solid #EEE8E0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",cursor:"pointer",overflow:"hidden",transition:"transform .1s"}}
                   onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"}
                   onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
                 >
-                  {/* 순위 */}
-                  <div style={{fontSize:i<3?20:13,fontWeight:900,color:i===0?"#FF7043":i===1?"#757575":i===2?"#C8874A":"#CCC",minWidth:28,textAlign:"center",flexShrink:0}}>
-                    {i<3?RANKS[i]:i+1}
-                  </div>
+                  <div style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 14px 10px"}}>
+                    {/* 순위 */}
+                    <div style={{fontSize:i<3?20:13,fontWeight:900,color:i===0?"#FF7043":i===1?"#757575":i===2?"#C8874A":"#CCC",minWidth:28,textAlign:"center",flexShrink:0,paddingTop:4}}>
+                      {i<3?RANKS[i]:i+1}
+                    </div>
 
-                  {/* 상품 이미지 */}
-                  {item.image
-                    ?<img src={item.image} alt={item.title} style={{width:72,height:72,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE8E0"}} onError={e=>{e.target.style.display="none";}}/>
-                    :<div style={{width:72,height:72,borderRadius:10,background:"#F5F0EB",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>🛍️</div>
-                  }
+                    {/* 이미지 */}
+                    {item.image
+                      ?<img src={item.image} alt={item.title} style={{width:72,height:72,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE8E0"}} onError={e=>e.target.style.display="none"}/>
+                      :<div style={{width:72,height:72,borderRadius:10,background:"#F5F0EB",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>🛍️</div>
+                    }
 
-                  {/* 상품 정보 */}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:800,color:"#1A1A1A",lineHeight:1.4,marginBottom:5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.title}</div>
-                    <div style={{fontSize:15,fontWeight:900,color:"#FF7043",marginBottom:5}}>{item.lprice?.toLocaleString()}원~</div>
-                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                      {item.reviewCount>0&&(
-                        <span style={{display:"inline-flex",alignItems:"center",gap:2,background:"#F5F0EB",borderRadius:5,padding:"2px 6px"}}>
-                          <span style={{fontSize:9,color:"#888"}}>💬 리뷰</span>
-                          <span style={{fontSize:9,fontWeight:800,color:"#444"}}>{item.reviewCount?.toLocaleString()}개</span>
-                        </span>
-                      )}
-                      {item.score>0&&(
-                        <span style={{display:"inline-flex",alignItems:"center",gap:2,background:"#FFF3E0",borderRadius:5,padding:"2px 6px"}}>
-                          <span style={{fontSize:9,color:"#888"}}>🔥 판매</span>
-                          <span style={{fontSize:9,fontWeight:800,color:"#E65100"}}>{item.score?.toLocaleString()}</span>
-                        </span>
-                      )}
-                      {item.brand&&<span style={{fontSize:9,color:"#aaa"}}>{item.brand}</span>}
-                      <span style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:4,padding:"2px 6px",fontWeight:700}}>네이버</span>
+                    {/* 상품 정보 */}
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:800,color:"#1A1A1A",lineHeight:1.4,marginBottom:5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.title}</div>
+                      <div style={{fontSize:15,fontWeight:900,color:"#FF7043",marginBottom:6}}>{item.lprice?.toLocaleString()}원~</div>
+                      {item.brand&&<div style={{fontSize:9,color:"#aaa"}}>{item.brand}</div>}
                     </div>
                   </div>
 
-                  {/* 화살표 */}
-                  <div style={{fontSize:16,color:"#CCC",flexShrink:0}}>›</div>
+                  {/* 정렬 기준 강조 박스 */}
+                  <div style={{margin:"0 14px 12px",background:`${sortInfo.color}08`,borderRadius:10,padding:"8px 12px",border:`1px solid ${sortInfo.color}25`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:sortInfo.sub?4:0}}>
+                      <span style={{fontSize:12}}>{sortInfo.icon}</span>
+                      <span style={{fontSize:10,color:sortInfo.color,fontWeight:800}}>{sortInfo.label}</span>
+                      <span style={{fontSize:12,fontWeight:900,color:"#1A1A1A",marginLeft:4}}>{sortInfo.value}</span>
+                    </div>
+                    {sortInfo.sub&&<div style={{fontSize:8,color:"#aaa"}}>{sortInfo.sub}</div>}
+                  </div>
+
+                  {/* 별점 표시 — 항상 표시 */}
+                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:8}}>
+                    {item.rating
+                      ?<>
+                        <div style={{display:"flex",alignItems:"center",gap:3}}>
+                          {[1,2,3,4,5].map(s=>(
+                            <span key={s} style={{fontSize:13,color:s<=Math.round(item.rating)?"#FFB300":"#DDD"}}>★</span>
+                          ))}
+                        </div>
+                        <span style={{fontSize:13,fontWeight:900,color:"#FFB300"}}>{item.rating?.toFixed(1)}점</span>
+                        {item.ratingCount>0&&<span style={{fontSize:9,color:"#aaa"}}>({item.ratingCount?.toLocaleString()}명)</span>}
+                      </>
+                      :<div style={{display:"flex",alignItems:"center",gap:4}}>
+                        {[1,2,3,4,5].map(s=>(
+                          <span key={s} style={{fontSize:13,color:"#DDD"}}>★</span>
+                        ))}
+                        <span style={{fontSize:9,color:"#aaa",marginLeft:2}}>별점은 상품 클릭 후 확인</span>
+                      </div>
+                    }
+                  </div>
+
+                  {/* 하단 */}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px 10px",borderTop:"1px solid #F5F0EB"}}>
+                    <div style={{display:"flex",gap:6}}>
+                      {item.reviewCount>0&&sortBy!=="reviews"&&(
+                        <span style={{fontSize:9,color:"#888"}}>💬 {item.reviewCount?.toLocaleString()}</span>
+                      )}
+                      {item.score>0&&sortBy!=="sales"&&(
+                        <span style={{fontSize:9,color:"#888"}}>🔥 {item.score?.toLocaleString()}</span>
+                      )}
+                    </div>
+                    <div style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:6,padding:"3px 10px",fontWeight:800}}>N 바로가기 →</div>
+                  </div>
                 </div>
               );
             })}
