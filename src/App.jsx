@@ -14,7 +14,7 @@ function calcMonth(b){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   8개 쇼핑몰 (무신사·이베이 제거)
+   5개 쇼핑몰 (무신사·이베이 제거)
    ─ 실제 서비스시 각 API 키를 서버에서 관리하세요
    ─ 쿠팡 파트너스: https://partners.coupang.com
    ─ 네이버 쇼핑: https://developers.naver.com/docs/serviceapi/search/shopping
@@ -45,7 +45,7 @@ function goShop(name,kw){
    각 쇼핑몰 API에서 실시간으로 받아와야 합니다 ─ */
 function mkPrices(base){
   const r=(p)=>Math.round(base*(1+p)/100)*100;
-  return {쿠팡:r(0),네이버:r(.03),지마켓:r(.05),"11번가":r(.04),옥션:r(.07),아마존:r(.15),알리:r(-.18),올리브영:r(.06)};
+  return {쿠팡:r(0),네이버:r(.03),"11번가":r(.04),아마존:r(.15),알리:r(-.18)};
 }
 /* ─ 쇼핑몰별 가상 리뷰/별점 (실서비스시 API로 교체) ─ */
 function mkShopStats(baseReviews,baseRating){
@@ -54,12 +54,9 @@ function mkShopStats(baseReviews,baseRating){
   return {
     쿠팡:     {reviews:v(baseReviews,.3), rating:vr(baseRating,0)},
     네이버:   {reviews:v(baseReviews,.2), rating:vr(baseRating,-.1)},
-    지마켓:   {reviews:v(baseReviews,.1), rating:vr(baseRating,-.1)},
     "11번가": {reviews:v(baseReviews,.15),rating:vr(baseRating,0)},
-    옥션:     {reviews:v(baseReviews,.05),rating:vr(baseRating,-.2)},
     아마존:   {reviews:v(baseReviews,.5), rating:vr(baseRating,.1)},
     알리:     {reviews:v(baseReviews,.4), rating:vr(baseRating,-.3)},
-    올리브영: {reviews:v(baseReviews,.08),rating:vr(baseRating,0)},
   };
 }
 
@@ -252,7 +249,7 @@ function Splash(){
             <span key={i} style={{fontSize:26,animation:`bounceSoft ${0.9+i*0.13}s ${i*0.09}s ease-in-out infinite`,display:"inline-block",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.08))"}}>{e}</span>
           ))}
         </div>
-        <div style={{fontSize:9,color:MU,letterSpacing:1.2,animation:"fadeUp 0.5s 1.1s both",opacity:0}}>8개 쇼핑몰 통합 분석 · 월령별 맞춤 가이드</div>
+        <div style={{fontSize:9,color:MU,letterSpacing:1.2,animation:"fadeUp 0.5s 1.1s both",opacity:0}}>5개 쇼핑몰 통합 분석 · 월령별 맞춤 가이드</div>
       </div>
       <div style={{position:"absolute",bottom:0,left:0,right:0,height:90,background:"linear-gradient(0deg,rgba(255,220,196,0.35),transparent)",borderRadius:"55% 55% 0 0",animation:"float 4s ease-in-out infinite"}}/>
     </div>
@@ -426,7 +423,7 @@ function PCard({p,rank,wished,onWish,onClick,activeShops}){
         <div style={{fontSize:24,background:isTop?"rgba(255,112,67,0.1)":BG,borderRadius:10,padding:"6px",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${isTop?"rgba(255,112,67,0.2)":BO}`,flexShrink:0}}>{p.img}</div>
         <div style={{flex:1,minWidth:0,paddingRight:22}}>
           <div style={{display:"flex",gap:3,marginBottom:2,flexWrap:"wrap"}}>
-            <span style={{background:"rgba(255,112,67,0.1)",color:P,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:800}}>8개몰통합</span>
+            <span style={{background:"rgba(255,112,67,0.1)",color:P,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:800}}>5개몰통합</span>
             <span style={{background:BG,color:MU,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:700}}>{p.cat}</span>
           </div>
           <div style={{fontSize:12,fontWeight:800,color:TX,lineHeight:1.3,marginBottom:1,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.name}</div>
@@ -1161,12 +1158,12 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
         {/* 카테고리별 TOP5 — 탭 선택 + 세로 리스트 */}
         <CatTop5 prods={prods} cats={cats} catColors={catColors} activeShops={activeShops} setSelProd={setSelProd} setTab={setTab}/>
 
-        {/* 8개몰 배지 (맨 아래) */}
+        {/* 5개몰 배지 (맨 아래) */}
         <div style={{background:"rgba(255,112,67,0.06)",border:`1px solid rgba(255,112,67,0.15)`,borderRadius:12,padding:"8px 12px",marginTop:4,display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:14}}>📊</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:10,fontWeight:800,color:P}}>8개 쇼핑몰 통합 분석 순위</div>
-            <div style={{fontSize:8,color:MU}}>쿠팡·네이버·지마켓·11번가·옥션·아마존·알리·올리브영</div>
+            <div style={{fontSize:10,fontWeight:800,color:P}}>5개 쇼핑몰 통합 분석 순위</div>
+            <div style={{fontSize:8,color:MU}}>쿠팡 · 네이버 · 11번가 · 아마존 · 알리</div>
           </div>
         </div>
       </div>
@@ -1268,7 +1265,7 @@ function ShopTab({month,setMonth,wish,onWish,setSelProd,activeShops,setActiveSho
 
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
         <span style={{fontSize:11,fontWeight:700,color:MU}}>{month}개월 TOP {shown.length}</span>
-        <span style={{fontSize:9,color:MU}}>8개몰 통합</span>
+        <span style={{fontSize:9,color:MU}}>5개몰 통합</span>
       </div>
 
       {filtered.length===0?(
