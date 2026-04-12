@@ -1462,33 +1462,48 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
                     </div>
                   </div>
 
-                  {/* 정렬 기준 강조 박스 */}
-                  <div style={{margin:"0 14px 12px",background:`${sortInfo.color}08`,borderRadius:10,padding:"8px 12px",border:`1px solid ${sortInfo.color}25`}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:sortInfo.sub?4:0}}>
-                      <span style={{fontSize:12}}>{sortInfo.icon}</span>
-                      <span style={{fontSize:10,color:sortInfo.color,fontWeight:800}}>{sortInfo.label}</span>
-                      <span style={{fontSize:12,fontWeight:900,color:"#1A1A1A",marginLeft:4}}>{sortInfo.value}</span>
+                  {/* 별점 / 리뷰 / 구매수 */}
+                  <div style={{margin:"0 14px 12px",background:"#FAFAFA",borderRadius:10,padding:"9px 12px",border:"1px solid #EEE8E0"}}>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
+                      {/* 별점 */}
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        {item.rating
+                          ?<>
+                            <div style={{display:"flex",gap:1}}>
+                              {[1,2,3,4,5].map(s=>(
+                                <span key={s} style={{fontSize:12,color:s<=Math.round(item.rating)?"#FFB300":"#DDD"}}>★</span>
+                              ))}
+                            </div>
+                            <span style={{fontSize:13,fontWeight:900,color:"#F57F17"}}>{item.rating.toFixed(1)}</span>
+                          </>
+                          :<>
+                            {[1,2,3,4,5].map(s=><span key={s} style={{fontSize:12,color:"#DDD"}}>★</span>)}
+                            <span style={{fontSize:9,color:"#CCC"}}>-</span>
+                          </>
+                        }
+                      </div>
+                      {/* 구분선 */}
+                      <div style={{width:1,height:14,background:"#EEE"}}/>
+                      {/* 구매수 */}
+                      <div style={{display:"flex",alignItems:"center",gap:3}}>
+                        <span style={{fontSize:9,color:"#888"}}>구매</span>
+                        <span style={{fontSize:11,fontWeight:800,color:item.purchaseCount?"#E65100":"#CCC"}}>
+                          {item.purchaseCount?item.purchaseCount.toLocaleString()+"명":"-"}
+                        </span>
+                      </div>
+                      {/* 구분선 */}
+                      <div style={{width:1,height:14,background:"#EEE"}}/>
+                      {/* 리뷰수 */}
+                      <div style={{display:"flex",alignItems:"center",gap:3}}>
+                        <span style={{fontSize:9,color:"#888"}}>리뷰</span>
+                        <span style={{fontSize:11,fontWeight:800,color:item.reviewCount?"#1565C0":"#CCC"}}>
+                          {item.reviewCount?item.reviewCount.toLocaleString()+"개":"-"}
+                        </span>
+                      </div>
                     </div>
-                    {sortInfo.sub&&<div style={{fontSize:8,color:"#aaa"}}>{sortInfo.sub}</div>}
-                  </div>
-
-                  {/* 별점 표시 */}
-                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"#FFFDE7",borderRadius:8,border:"1px solid #FFE082"}}>
-                    {item.rating
-                      ?<>
-                        <div style={{display:"flex",gap:1}}>
-                          {[1,2,3,4,5].map(s=>(
-                            <span key={s} style={{fontSize:13,color:s<=Math.round(item.rating)?"#FFB300":"#DDD"}}>★</span>
-                          ))}
-                        </div>
-                        <span style={{fontSize:14,fontWeight:900,color:"#F57F17"}}>{item.rating.toFixed(1)}점</span>
-                        {item.reviewCount>0&&<span style={{fontSize:10,color:"#888"}}>· 리뷰 {item.reviewCount.toLocaleString()}개</span>}
-                      </>
-                      :<>
-                        <span style={{fontSize:12}}>⭐</span>
-                        <span style={{fontSize:10,color:"#F57F17",fontWeight:700}}>별점은 상품 클릭 후 확인</span>
-                      </>
-                    }
+                    {!item.rating&&!item.purchaseCount&&!item.reviewCount&&(
+                      <div style={{fontSize:8,color:"#CCC",marginTop:4}}>쿠팡 API 연동 후 표시 예정</div>
+                    )}
                   </div>
 
                   {/* 하단 */}
