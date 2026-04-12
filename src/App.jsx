@@ -1462,48 +1462,11 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
                     </div>
                   </div>
 
-                  {/* 별점 / 리뷰 / 구매수 */}
-                  <div style={{margin:"0 14px 12px",background:"#FAFAFA",borderRadius:10,padding:"9px 12px",border:"1px solid #EEE8E0"}}>
-                    <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
-                      {/* 별점 */}
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>
-                        {item.rating
-                          ?<>
-                            <div style={{display:"flex",gap:1}}>
-                              {[1,2,3,4,5].map(s=>(
-                                <span key={s} style={{fontSize:12,color:s<=Math.round(item.rating)?"#FFB300":"#DDD"}}>★</span>
-                              ))}
-                            </div>
-                            <span style={{fontSize:13,fontWeight:900,color:"#F57F17"}}>{item.rating.toFixed(1)}</span>
-                          </>
-                          :<>
-                            {[1,2,3,4,5].map(s=><span key={s} style={{fontSize:12,color:"#DDD"}}>★</span>)}
-                            <span style={{fontSize:9,color:"#CCC"}}>-</span>
-                          </>
-                        }
-                      </div>
-                      {/* 구분선 */}
-                      <div style={{width:1,height:14,background:"#EEE"}}/>
-                      {/* 구매수 */}
-                      <div style={{display:"flex",alignItems:"center",gap:3}}>
-                        <span style={{fontSize:9,color:"#888"}}>구매</span>
-                        <span style={{fontSize:11,fontWeight:800,color:item.purchaseCount?"#E65100":"#CCC"}}>
-                          {item.purchaseCount?item.purchaseCount.toLocaleString()+"명":"-"}
-                        </span>
-                      </div>
-                      {/* 구분선 */}
-                      <div style={{width:1,height:14,background:"#EEE"}}/>
-                      {/* 리뷰수 */}
-                      <div style={{display:"flex",alignItems:"center",gap:3}}>
-                        <span style={{fontSize:9,color:"#888"}}>리뷰</span>
-                        <span style={{fontSize:11,fontWeight:800,color:item.reviewCount?"#1565C0":"#CCC"}}>
-                          {item.reviewCount?item.reviewCount.toLocaleString()+"개":"-"}
-                        </span>
-                      </div>
-                    </div>
-                    {!item.rating&&!item.purchaseCount&&!item.reviewCount&&(
-                      <div style={{fontSize:8,color:"#CCC",marginTop:4}}>쿠팡 API 연동 후 표시 예정</div>
-                    )}
+                  {/* 가격 + 네이버 뱃지 */}
+                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:5,padding:"2px 7px",fontWeight:800}}>N 네이버</span>
+                    {item.brand&&<span style={{fontSize:9,color:"#aaa"}}>{item.brand}</span>}
+                    <span style={{fontSize:9,color:"#CCC",marginLeft:"auto"}}>별점·구매수는 쿠팡API 연동 후 표시</span>
                   </div>
 
                   {/* 하단 */}
