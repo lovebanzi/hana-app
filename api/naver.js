@@ -23,27 +23,21 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     const items = (data.items || []).map(item => {
-      // 직접 상품 링크 생성
       let directLink = item.link;
       if (item.productId && item.productType === '2') {
-        directLink = `https://smartstore.naver.com/main/products/${item.productId}`;
+        directLink = 'https://smartstore.naver.com/main/products/' + item.productId;
       } else if (item.productId && item.productType === '1') {
-        directLink = `https://search.shopping.naver.com/catalog/${item.productId}`;
+        directLink = 'https://search.shopping.naver.com/catalog/' + item.productId;
       }
-
       return {
         title:       item.title.replace(/<[^>]*>/g, ''),
         link:        directLink,
         image:       item.image,
         lprice:      Number(item.lprice) || 0,
-        hprice:      Number(item.hprice) || 0,
         mallName:    item.mallName || '',
         brand:       item.brand || '',
-        category:    item.category2 || item.category1 || '',
         reviewCount: Number(item.reviewCount) || 0,
         score:       Number(item.score) || 0,
-        productId:   item.productId || '',
-        productType: item.productType || '',
       };
     });
 
