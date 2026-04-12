@@ -52,13 +52,15 @@ async function fetchNaver(keyword, sort="sim", display=5){
 const naverCache={};
 async function getNaverPrice(keyword){
   if(naverCache[keyword])return naverCache[keyword];
-  const items=await fetchNaver(keyword,"asc",3); // 가격낮은순 3개
+  const items=await fetchNaver(keyword,"sim",3);
   if(!items||!items.length)return null;
+  const best=items[0]; // 첫번째 = 가장 관련도 높은 상품
   const result={
-    lprice: Math.min(...items.map(i=>i.lprice).filter(p=>p>0)),
-    mallName: items[0].mallName,
-    link: items[0].link,
-    reviewCount: items.reduce((s,i)=>s+i.reviewCount,0),
+    lprice:      Math.min(...items.map(i=>i.lprice).filter(p=>p>0)),
+    mallName:    best.mallName,
+    link:        best.link,
+    image:       best.image,
+    reviewCount: best.reviewCount,
   };
   naverCache[keyword]=result;
   return result;
@@ -644,34 +646,55 @@ function PCard({p,rank,wished,onWish,onClick,activeShops}){
   const sp=p.shopPrices||mkPrices(p.price);
   const minP=Math.min(...shops.map(s=>sp[s]||p.price));
   const isTop=rank===1;
+
+  // 네이버 실시간 이미지 + 가격
+  const {data:naverData,loading:naverLoading}=useNaverPrice(p.name);
+
   return(
     <div onClick={onClick} style={{background:isTop?`linear-gradient(135deg,#FFF3EA,#FFFBE6)`:CA,borderRadius:14,padding:"10px",border:isTop?`2px solid rgba(255,112,67,0.45)`:`1px solid ${BO}`,position:"relative",boxShadow:isTop?`0 4px 16px rgba(255,112,67,0.12)`:`0 1px 6px rgba(0,0,0,0.04)`,cursor:"pointer"}}>
       {rank&&<div style={{position:"absolute",top:-8,left:10,background:rank===1?`linear-gradient(135deg,${P},${G})`:rank===2?"#9E9E9E":rank===3?"#C8874A":rank<=5?"#8BC34A":"#E0D8D0",color:rank<=5?"#fff":"#999",borderRadius:9,padding:"1px 7px",fontSize:9,fontWeight:900}}>{rank===1?"🏆":rank<=5?`${rank}위`:`${rank}위`}</div>}
       <button onClick={e=>{e.stopPropagation();onWish(p);}} style={{position:"absolute",top:6,right:7,background:"none",border:"none",fontSize:14,cursor:"pointer",opacity:wished?1:0.25}}>❤️</button>
-      <div style={{display:"flex",gap:8,alignItems:"center",marginTop:rank?5:0}}>
-        <div style={{fontSize:24,background:isTop?"rgba(255,112,67,0.1)":BG,borderRadius:10,padding:"6px",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${isTop?"rgba(255,112,67,0.2)":BO}`,flexShrink:0}}>{p.img}</div>
+
+      <div style={{display:"flex",gap:10,alignItems:"flex-start",marginTop:rank?6:0}}>
+        {/* 이미지 — 네이버 실시간 or 이모지 */}
+        <div style={{flexShrink:0}}>
+          {naverData?.image
+            ?<img src={naverData.image} alt={p.name} style={{width:64,height:64,borderRadius:10,objectFit:"cover",border:`1px solid ${BO}`}} onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="flex";}}/>
+            :<div style={{width:64,height:64,borderRadius:10,background:isTop?"rgba(255,112,67,0.1)":BG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,border:`1px solid ${isTop?"rgba(255,112,67,0.2)":BO}`}}>{p.img}</div>
+          }
+          {naverData?.image&&<div style={{width:64,height:64,borderRadius:10,background:BG,display:"none",alignItems:"center",justifyContent:"center",fontSize:26}}>{p.img}</div>}
+        </div>
+
+        {/* 상품 정보 */}
         <div style={{flex:1,minWidth:0,paddingRight:22}}>
-          <div style={{display:"flex",gap:3,marginBottom:2,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:3,marginBottom:3,flexWrap:"wrap"}}>
             <span style={{background:"rgba(255,112,67,0.1)",color:P,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:800}}>5개몰통합</span>
             <span style={{background:BG,color:MU,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:700}}>{p.cat}</span>
           </div>
-          <div style={{fontSize:12,fontWeight:800,color:TX,lineHeight:1.3,marginBottom:1,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.name}</div>
-          <div style={{fontSize:9,color:MU,marginBottom:2}}>{p.brand}</div>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            <div style={{flex:1,height:3,borderRadius:9,background:"#FFE8D8",overflow:"hidden"}}><div style={{width:`${p.score}%`,height:"100%",background:`linear-gradient(90deg,${P},${G})`}}/></div>
-            <span style={{fontSize:8,color:P,fontWeight:800,flexShrink:0}}>{p.score}</span>
-          </div>
+          <div style={{fontSize:13,fontWeight:800,color:TX,lineHeight:1.3,marginBottom:3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.name}</div>
+          <div style={{fontSize:9,color:MU,marginBottom:4}}>{p.brand}</div>
+          {/* 네이버 실시간 가격 */}
+          {naverLoading
+            ?<span style={{fontSize:9,color:"#aaa"}}>가격 조회중...</span>
+            :naverData?.lprice
+              ?<div style={{display:"flex",alignItems:"center",gap:4}}>
+                <span style={{fontSize:12,fontWeight:900,color:"#2E7D32"}}>{naverData.lprice.toLocaleString()}원~</span>
+                <span style={{fontSize:8,background:"#E8F5E9",color:"#2E7D32",borderRadius:4,padding:"1px 5px",fontWeight:700}}>네이버 실시간</span>
+              </div>
+              :<div style={{fontSize:12,fontWeight:900,color:P}}>{minP.toLocaleString()}<span style={{fontSize:9,color:MU}}>원~</span></div>
+          }
         </div>
       </div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,paddingTop:7,borderTop:`1px solid ${BO}`}}>
-        <div>
-          <div style={{fontSize:13,fontWeight:900,color:P}}>{minP.toLocaleString()}<span style={{fontSize:9,color:MU}}>원~</span></div>
-          <div style={{fontSize:8,color:MU,marginBottom:3}}>★{p.rating} · 리뷰{p.reviews.toLocaleString()}</div>
-          <NaverPriceTag name={p.name}/>
+
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:9,paddingTop:8,borderTop:`1px solid ${BO}`}}>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+          <span style={{fontSize:9,color:MU}}>★{p.rating}</span>
+          <span style={{fontSize:9,color:MU}}>리뷰 {p.reviews.toLocaleString()}</span>
+          {naverData?.reviewCount>0&&<span style={{fontSize:9,color:"#2E7D32",fontWeight:700}}>N리뷰 {naverData.reviewCount.toLocaleString()}</span>}
         </div>
         <div style={{display:"flex",gap:4}}>
-          <button onClick={e=>{e.stopPropagation();window.open(`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(p.name)}`,"_blank");}} style={{background:"#03C75A",border:"none",color:"#fff",borderRadius:8,padding:"5px 8px",fontSize:10,fontWeight:900,cursor:"pointer"}}>N</button>
-          <button onClick={e=>{e.stopPropagation();onClick();}} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",color:"#fff",borderRadius:8,padding:"5px 10px",fontSize:10,fontWeight:900,cursor:"pointer"}}>사러가기 →</button>
+          <button onClick={e=>{e.stopPropagation();window.open(naverData?.link||`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(p.name)}`,"_blank");}} style={{background:"#03C75A",border:"none",color:"#fff",borderRadius:8,padding:"6px 10px",fontSize:10,fontWeight:900,cursor:"pointer"}}>N 바로가기</button>
+          <button onClick={e=>{e.stopPropagation();onClick();}} style={{background:`linear-gradient(135deg,${P},${G})`,border:"none",color:"#fff",borderRadius:8,padding:"6px 10px",fontSize:10,fontWeight:900,cursor:"pointer"}}>상세보기</button>
         </div>
       </div>
     </div>
@@ -1401,11 +1424,22 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
                   {/* 상품 정보 */}
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:13,fontWeight:800,color:"#1A1A1A",lineHeight:1.4,marginBottom:5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.title}</div>
-                    <div style={{fontSize:15,fontWeight:900,color:"#FF7043",marginBottom:4}}>{item.lprice?.toLocaleString()}원~</div>
-                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                      {item.reviewCount>0&&<span style={{fontSize:9,color:"#888"}}>리뷰 {item.reviewCount?.toLocaleString()}</span>}
-                      {item.brand&&<span style={{fontSize:9,color:"#888"}}>{item.brand}</span>}
-                      <span style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:4,padding:"1px 5px",fontWeight:700}}>네이버</span>
+                    <div style={{fontSize:15,fontWeight:900,color:"#FF7043",marginBottom:5}}>{item.lprice?.toLocaleString()}원~</div>
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                      {item.reviewCount>0&&(
+                        <span style={{display:"inline-flex",alignItems:"center",gap:2,background:"#F5F0EB",borderRadius:5,padding:"2px 6px"}}>
+                          <span style={{fontSize:9,color:"#888"}}>💬 리뷰</span>
+                          <span style={{fontSize:9,fontWeight:800,color:"#444"}}>{item.reviewCount?.toLocaleString()}개</span>
+                        </span>
+                      )}
+                      {item.score>0&&(
+                        <span style={{display:"inline-flex",alignItems:"center",gap:2,background:"#FFF3E0",borderRadius:5,padding:"2px 6px"}}>
+                          <span style={{fontSize:9,color:"#888"}}>🔥 판매</span>
+                          <span style={{fontSize:9,fontWeight:800,color:"#E65100"}}>{item.score?.toLocaleString()}</span>
+                        </span>
+                      )}
+                      {item.brand&&<span style={{fontSize:9,color:"#aaa"}}>{item.brand}</span>}
+                      <span style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:4,padding:"2px 6px",fontWeight:700}}>네이버</span>
                     </div>
                   </div>
 
