@@ -1472,25 +1472,12 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
                     {sortInfo.sub&&<div style={{fontSize:8,color:"#aaa"}}>{sortInfo.sub}</div>}
                   </div>
 
-                  {/* 별점 표시 — 항상 표시 */}
-                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:8}}>
-                    {item.rating
-                      ?<>
-                        <div style={{display:"flex",alignItems:"center",gap:3}}>
-                          {[1,2,3,4,5].map(s=>(
-                            <span key={s} style={{fontSize:13,color:s<=Math.round(item.rating)?"#FFB300":"#DDD"}}>★</span>
-                          ))}
-                        </div>
-                        <span style={{fontSize:13,fontWeight:900,color:"#FFB300"}}>{item.rating?.toFixed(1)}점</span>
-                        {item.ratingCount>0&&<span style={{fontSize:9,color:"#aaa"}}>({item.ratingCount?.toLocaleString()}명)</span>}
-                      </>
-                      :<div style={{display:"flex",alignItems:"center",gap:4}}>
-                        {[1,2,3,4,5].map(s=>(
-                          <span key={s} style={{fontSize:13,color:"#DDD"}}>★</span>
-                        ))}
-                        <span style={{fontSize:9,color:"#aaa",marginLeft:2}}>별점은 상품 클릭 후 확인</span>
-                      </div>
-                    }
+                  {/* 별점 표시 */}
+                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"#FFFDE7",borderRadius:8,border:"1px solid #FFF176"}}>
+                    {[1,2,3,4,5].map(s=>(
+                      <span key={s} style={{fontSize:14,color:"#FFB300"}}>★</span>
+                    ))}
+                    <span style={{fontSize:10,color:"#F57F17",fontWeight:700,marginLeft:2}}>별점은 상품 클릭 후 확인</span>
                   </div>
 
                   {/* 하단 */}
