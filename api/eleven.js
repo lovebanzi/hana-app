@@ -100,3 +100,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: e.message, stack: e.stack });
   }
 }
+// 2026년  4월 14일 화요일 10시 30분 44초 KST
