@@ -9,37 +9,39 @@ export default async function handler(req, res) {
   const KEY = '023d870b74927108dc29e45244b4d8cb';
 
   try {
-    // 11번가 API 호출 - UTF-8 인코딩 요청
     const url = `http://openapi.11st.co.kr/openapi/OpenApiService.tmall?key=${KEY}&apiCode=ProductSearch&keyword=${encodeURIComponent(query)}&count=${display}&charset=UTF-8`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: { 'Accept': '*/*' }
+    });
+
     if (!response.ok) {
-      return res.status(response.status).json({ error: `11st API error: ${response.status}` });
+      return res.status(response.status).json({ error: `11st error: ${response.status}` });
     }
 
-    // ArrayBuffer로 받아서 여러 인코딩 시도
     const buffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
 
-    // UTF-8 먼저 시도
+    // EUC-KR 디코딩
     let xml = '';
-    try {
-      xml = new TextDecoder('utf-8').decode(bytes);
-    } catch(e) {}
-
-    // utf-8으로 파싱 안되면 latin1로 시도 후 한글 복원
-    if (!xml.includes('ProductName') && !xml.includes('Product')) {
+    const encodings = ['utf-8', 'euc-kr', 'iso-8859-1'];
+    for (const enc of encodings) {
       try {
-        xml = new TextDecoder('iso-8859-1').decode(bytes);
+        const decoded = new TextDecoder(enc).decode(new Uint8Array(buffer));
+        if (decoded.includes('ProductName') || decoded.includes('Product')) {
+          xml = decoded;
+          break;
+        }
       } catch(e) {}
     }
 
-    // CDATA + 일반 태그 모두 파싱
+    if (!xml) {
+      return res.status(500).json({ error: 'decode failed', items: [] });
+    }
+
+    // CDATA 포함 파싱
     function getVal(tag, str) {
-      // CDATA 방식: <Tag><![CDATA[value]]></Tag>
       let m = str.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, 'i'));
       if (m) return m[1].trim();
-      // 일반 방식: <Tag>value</Tag>
       m = str.match(new RegExp(`<${tag}[^>]*>([^<]*)<\\/${tag}>`, 'i'));
       if (m) return m[1].trim();
       return '';
@@ -51,53 +53,29 @@ export default async function handler(req, res) {
     let match;
     while ((match = re.exec(xml)) !== null) blocks.push(match[1]);
 
-    if (blocks.length === 0) {
-      // 디버깅용 — XML 앞부분 반환
-      return res.status(200).json({ 
-        items: [], 
-        debug: xml.substring(0, 500),
-        total: 0 
-      });
-    }
-
     const items = blocks.slice(0, parseInt(display)).map(p => {
-      const name  = getVal('ProductName', p);
+      const name = getVal('ProductName', p);
+      if (!name) return null;
+
       const price = getVal('ProductPrice', p).replace(/[^0-9]/g, '');
-      const img100 = getVal('ProductImage100', p);
-      const img   = getVal('ProductImage', p);
-      const link  = getVal('DetailPageUrl', p) || getVal('ProductLink', p);
-      const brand = getVal('BrandName', p);
-      const reviewCount = getVal('ReviewCount', p);
-      const rating = getVal('ReviewScore', p);
-      const code  = getVal('ProductCode', p);
-
-      // 이미지 URL 정규화
-      let imageUrl = img100 || img;
-      if (imageUrl && !imageUrl.startsWith('http')) {
-        imageUrl = 'https:' + imageUrl;
-      }
-
-      // 링크 정규화
-      let linkUrl = link;
-      if (!linkUrl && code) {
-        linkUrl = `https://www.11st.co.kr/products/${code}`;
-      }
+      const img = getVal('ProductImage100', p) || getVal('ProductImage', p);
+      const link = getVal('DetailPageUrl', p) || getVal('ProductLink', p);
+      const code = getVal('ProductCode', p);
 
       return {
         title:       name,
-        link:        linkUrl,
-        image:       imageUrl,
+        link:        link || `https://www.11st.co.kr/products/${code}`,
+        image:       img ? (img.startsWith('http') ? img : 'https:' + img) : '',
         lprice:      Number(price) || 0,
         mallName:    '11번가',
-        brand:       brand,
-        reviewCount: Number(reviewCount) || 0,
-        rating:      parseFloat(rating) || 0,
+        brand:       getVal('BrandName', p),
+        reviewCount: Number(getVal('ReviewCount', p)) || 0,
+        rating:      parseFloat(getVal('ReviewScore', p)) || 0,
       };
-    }).filter(item => item.title); // 제목 없는 항목 제거
+    }).filter(Boolean);
 
     res.status(200).json({ items, total: blocks.length });
   } catch (e) {
-    res.status(500).json({ error: e.message, stack: e.stack });
+    res.status(500).json({ error: e.message, items: [] });
   }
 }
-// 2026년  4월 14일 화요일 10시 30분 44초 KST

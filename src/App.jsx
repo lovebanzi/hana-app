@@ -78,18 +78,7 @@ function useNaverPrice(name){
   return {data,loading};
 }
 
-/* ── 11번가 API 호출 ── */
-async function fetchEleven(keyword, sort="POPULAR", display=20){
-  try{
-    const res=await fetch(`/api/eleven?query=${encodeURIComponent(keyword)}&sort=${sort}&display=${display}`);
-    if(!res.ok)return null;
-    const data=await res.json();
-    return data.items||[];
-  }catch(e){return null;}
-}
-
-/* 11번가 sort 매핑 */
-// POPULAR=인기순, REVIEW=리뷰순, RATING=별점순, CHEAP=낮은가격
+/* 네이버 정렬 검색 훅 (종합/판매/리뷰/가격순) */
 function useNaverSort(keyword, sort){
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -1275,57 +1264,51 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
 
   // 정렬 기준
   const [sortBy,setSortBy]=useState("score");
-  // 체크박스 방식 - 여러 쇼핑몰 동시 선택
-  const [selectedShops,setSelectedShops]=useState({naver:true,eleven:true});
+  // naver: sort 파라미터 매핑
+  // sim=관련순, asc=가격낮은순, dsc=가격높은순
+  // 리뷰순/판매순은 가져온 후 클라이언트 정렬
 
-  // 모든 활성 쇼핑몰 데이터 통합
+  // 내부 DB에서 해당 그룹 대표 키워드 추출
+  const prods=useMemo(()=>{
+    const seen=new Set();
+    return getGroupProds(grp.months).filter(p=>{
+      if(seen.has(p.name))return false;
+      seen.add(p.name);
+      return true;
+    }).sort((a,b)=>
+      sortBy==="score"?b.score-a.score:
+      sortBy==="sales"?b.sales-a.sales:
+      sortBy==="reviews"?b.reviews-a.reviews:
+      b.rating-a.rating
+    );
+  },[grp,sortBy]);
+
+  // 네이버 실시간 상품 리스트
   const [naverItems,setNaverItems]=useState([]);
-  const [elevenItems,setElevenItems]=useState([]);
   const [loading,setLoading]=useState(false);
+  const [searchKeyword,setSearchKeyword]=useState("");
 
   useEffect(()=>{
+    // 그룹이 바뀌면 그룹 대표 키워드로 검색
     const keyword=grp.short+"개월 아기용품";
+    setSearchKeyword(keyword);
     setLoading(true);
     setNaverItems([]);
-    setElevenItems([]);
-
-    const naverSort=sortBy==="price_asc"?"asc":"sim";
-    const elevenSort=sortBy==="reviews"?"REVIEW":sortBy==="rating"?"RATING":"POPULAR";
-
-    const fetchers=[];
-    if(selectedShops.naver) fetchers.push(fetchNaver(keyword,naverSort,15).then(r=>({src:"naver",items:r||[]})));
-    else fetchers.push(Promise.resolve({src:"naver",items:[]}));
-    if(selectedShops.eleven) fetchers.push(fetchEleven(keyword,elevenSort,15).then(r=>({src:"eleven",items:r||[]})));
-    else fetchers.push(Promise.resolve({src:"eleven",items:[]}));
-
-    Promise.all(fetchers).then(([naverRes,elevenRes])=>{
-      let nSorted=[...naverRes.items];
-      if(sortBy==="reviews") nSorted.sort((a,b)=>b.reviewCount-a.reviewCount);
-      if(sortBy==="sales")   nSorted.sort((a,b)=>b.score-a.score);
-      if(sortBy==="score")   nSorted.sort((a,b)=>(b.reviewCount+b.score*10)-(a.reviewCount+a.score*10));
-      setNaverItems(nSorted);
-      setElevenItems(elevenRes.items);
+    // sort 매핑
+    const naverSort=sortBy==="price_asc"?"asc":sortBy==="price_desc"?"dsc":"sim";
+    fetchNaver(keyword, naverSort, 20).then(items=>{
+      if(!items){setLoading(false);return;}
+      // 클라이언트 정렬
+      let sorted=[...items];
+      if(sortBy==="reviews") sorted.sort((a,b)=>b.reviewCount-a.reviewCount);
+      if(sortBy==="sales")   sorted.sort((a,b)=>b.score-a.score);
+      if(sortBy==="rating")  sorted.sort((a,b)=>b.score-a.score);
+      // 종합순: 리뷰+score 합산
+      if(sortBy==="score")   sorted.sort((a,b)=>(b.reviewCount+b.score*10)-(a.reviewCount+a.score*10));
+      setNaverItems(sorted);
       setLoading(false);
     });
-  },[grp,sortBy,selectedShops]);
-
-  // 통합 결과 — 쇼핑몰 태그 붙여서 합치기
-  const mergedItems=useMemo(()=>{
-    const naver=(selectedShops.naver?naverItems:[]).map(i=>({...i,_src:"naver"}));
-    const eleven=(selectedShops.eleven?elevenItems:[]).map(i=>({...i,_src:"eleven"}));
-
-    if(!selectedShops.naver) return eleven;
-    if(!selectedShops.eleven) return naver;
-
-    // 둘 다 선택 — 교대로 섞기 (네이버 1위, 11번가 1위, 네이버 2위, ...)
-    const merged=[];
-    const maxLen=Math.max(naver.length,eleven.length);
-    for(let i=0;i<maxLen;i++){
-      if(naver[i]) merged.push(naver[i]);
-      if(eleven[i]) merged.push(eleven[i]);
-    }
-    return merged;
-  },[naverItems,elevenItems,selectedShops]);
+  },[grp,sortBy]);
 
   const DRAG=()=>({
     onMouseDown:e=>{const el=e.currentTarget;el.dataset.down="1";el.dataset.startX=e.pageX-el.offsetLeft;el.dataset.sl=el.scrollLeft;el.style.cursor="grabbing";},
@@ -1388,68 +1371,23 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
           </div>
         </div>
 
-        {/* 전체 쇼핑몰 비교 헤더 */}
-        <div style={{marginBottom:10}}>
-          <div style={{fontSize:14,fontWeight:900,color:"#1A1A1A",marginBottom:2}}>🛍️ 전체 쇼핑몰 실시간 비교</div>
-          <div style={{fontSize:10,color:"#888"}}>쇼핑몰을 선택하면 함께 비교해드려요</div>
+        {/* 정렬 버튼 */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:13,fontWeight:900,color:"#1A1A1A"}}>네이버 실시간 인기상품</div>
+          <div style={{fontSize:9,color:"#888"}}>네이버 쇼핑 기준</div>
         </div>
-
-        {/* 쇼핑몰 체크박스 */}
-        <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:10}}>
-          {[
-            {k:"naver", l:"네이버", c:"#03C75A", active:true},
-            {k:"eleven",l:"11번가", c:"#E60000", active:true},
-            {k:"coupang",l:"쿠팡",  c:"#FF5733", active:false},
-            {k:"ali",   l:"알리",   c:"#FF4747", active:false},
-            {k:"temu",  l:"Temu",  c:"#FF6900", active:false},
-          ].map(({k,l,c,active})=>{
-            const checked=selectedShops[k];
-            return(
-              <button key={k}
-                onClick={()=>{
-                  if(!active)return;
-                  setSelectedShops(prev=>{
-                    const next={...prev,[k]:!prev[k]};
-                    // 최소 1개는 선택 유지
-                    if(!Object.values(next).some(Boolean))return prev;
-                    return next;
-                  });
-                }}
-                style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:20,
-                  background:checked&&active?c:"#fff",
-                  color:checked&&active?"#fff":active?"#555":"#CCC",
-                  border:`2px solid ${checked&&active?c:active?"#DDD":"#EEE"}`,
-                  fontWeight:800,fontSize:11,cursor:active?"pointer":"default",
-                  transition:"all .2s",opacity:active?1:0.45,
-                  boxShadow:checked&&active?`0 3px 10px ${c}40`:"none",
-                }}>
-                {/* 체크 아이콘 */}
-                {active&&<span style={{fontSize:10}}>{checked?"✓":"○"}</span>}
-                {l}
-                {!active&&<span style={{fontSize:8,color:"#CCC",marginLeft:2}}>준비중</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 선택된 쇼핑몰 표시 */}
-        {(selectedShops.naver&&selectedShops.eleven)&&(
-          <div style={{background:"linear-gradient(135deg,#E8F5E9,#FFF0F0)",borderRadius:10,padding:"7px 12px",marginBottom:10,border:"1px solid #DDD",fontSize:10,color:"#555",fontWeight:700}}>
-            🟢 네이버 + 🔴 11번가 통합 비교 중
-          </div>
-        )}
-
-        {/* 정렬 */}
         <div style={{display:"flex",gap:6,marginBottom:14}}>
           {[{k:"score",l:"종합순"},{k:"sales",l:"판매순"},{k:"reviews",l:"리뷰순"},{k:"rating",l:"별점순"}].map(({k,l})=>(
-            <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"7px 0",borderRadius:8,background:sortBy===k?"#FF7043":"#fff",color:sortBy===k?"#fff":"#888",border:sortBy===k?"none":"1px solid #EEE8E0",fontWeight:sortBy===k?900:600,fontSize:10,cursor:"pointer",transition:"all .15s"}}>{l}</button>
+            <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"7px 0",borderRadius:8,background:sortBy===k?"#FF7043":"#fff",color:sortBy===k?"#fff":"#888",border:sortBy===k?"none":"1px solid #EEE8E0",fontWeight:sortBy===k?900:600,fontSize:10,cursor:"pointer",transition:"all .15s"}}>
+              {l}
+            </button>
           ))}
         </div>
 
-        {/* 로딩 */}
+        {/* 네이버 실시간 상품 리스트 */}
         {loading&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[1,2,3,4,5,6].map(i=>(
+            {[1,2,3,4,5].map(i=>(
               <div key={i} style={{background:"#fff",borderRadius:12,padding:"14px",border:"1px solid #EEE8E0",display:"flex",gap:12,alignItems:"center"}}>
                 <div style={{width:72,height:72,borderRadius:10,background:"#F0EDE8",flexShrink:0,animation:"pulse 1.5s infinite"}}/>
                 <div style={{flex:1}}>
@@ -1461,55 +1399,87 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
           </div>
         )}
 
-        {/* 통합 상품 리스트 */}
-        {!loading&&mergedItems.length===0&&(
+        {!loading&&naverItems.length===0&&(
           <div style={{textAlign:"center",padding:"40px 0",color:"#aaa"}}>
             <div style={{fontSize:32,marginBottom:8}}>🔍</div>
             <div>상품을 불러오는 중이에요</div>
           </div>
         )}
 
-        {!loading&&mergedItems.length>0&&(
+        {!loading&&naverItems.length>0&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {mergedItems.map((item,i)=>{
-              const isEleven=item._src==="eleven";
-              const color=isEleven?"#E60000":"#03C75A";
-              const bgColor=isEleven?"#FFF0F0":"#E8F5E9";
+            {naverItems.map((item,i)=>{
               const RANKS=["🥇","🥈","🥉"];
+
+              // 정렬 기준별 강조 지표
+              const sortInfo=
+                sortBy==="score"?{
+                  icon:"📊", label:"종합",
+                  value:`리뷰 ${item.reviewCount?.toLocaleString()||0}개 · 판매지수 ${item.score?.toLocaleString()||0}`,
+                  color:"#FF7043"
+                }:sortBy==="sales"?{
+                  icon:"🔥", label:"판매지수",
+                  value:item.score>0?`${item.score?.toLocaleString()}점`:"정보없음",
+                  sub:"※ 네이버 판매 지수 기준",
+                  color:"#E65100"
+                }:sortBy==="reviews"?{
+                  icon:"💬", label:"총 리뷰수",
+                  value:item.reviewCount>0?`${item.reviewCount?.toLocaleString()}개`:"리뷰없음",
+                  sub:"※ 별점별 상세리뷰는 상품 클릭 후 확인",
+                  color:"#1565C0"
+                }:{
+                  icon:"⭐", label:"별점",
+                  value:"상품 페이지에서 확인",
+                  sub:"※ 네이버 API는 별점 미제공 → 클릭 후 확인",
+                  color:"#F57F17"
+                };
+
               return(
-                <div key={i} onClick={()=>window.open(item.link,"_blank")}
-                  style={{background:"#fff",borderRadius:14,border:`1.5px solid ${color}20`,boxShadow:"0 2px 8px rgba(0,0,0,0.05)",cursor:"pointer",overflow:"hidden",transition:"transform .1s"}}
+                <div
+                  key={i}
+                  onClick={()=>window.open(item.link,"_blank")}
+                  style={{background:"#fff",borderRadius:14,border:"1px solid #EEE8E0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",cursor:"pointer",overflow:"hidden",transition:"transform .1s"}}
                   onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"}
                   onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
                 >
-                  {/* 쇼핑몰 표시 바 */}
-                  <div style={{background:color,padding:"4px 12px",display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:9,color:"#fff",fontWeight:900}}>{isEleven?"🔴 11번가":"🟢 네이버쇼핑"}</span>
-                    {i<6&&<span style={{fontSize:9,color:"rgba(255,255,255,0.8)",marginLeft:"auto"}}>{i<3?RANKS[i]:`${i+1}위`}</span>}
-                  </div>
+                  <div style={{display:"flex",gap:12,alignItems:"flex-start",padding:"14px 14px 10px"}}>
+                    {/* 순위 */}
+                    <div style={{fontSize:i<3?20:13,fontWeight:900,color:i===0?"#FF7043":i===1?"#757575":i===2?"#C8874A":"#CCC",minWidth:28,textAlign:"center",flexShrink:0,paddingTop:4}}>
+                      {i<3?RANKS[i]:i+1}
+                    </div>
 
-                  <div style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px 10px"}}>
                     {/* 이미지 */}
                     {item.image
-                      ?<img src={item.image} alt={item.title} style={{width:68,height:68,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE8E0"}} onError={e=>e.target.style.display="none"}/>
-                      :<div style={{width:68,height:68,borderRadius:10,background:"#F5F0EB",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>🛍️</div>
+                      ?<img src={item.image} alt={item.title} style={{width:72,height:72,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE8E0"}} onError={e=>e.target.style.display="none"}/>
+                      :<div style={{width:72,height:72,borderRadius:10,background:"#F5F0EB",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>🛍️</div>
                     }
 
                     {/* 상품 정보 */}
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:13,fontWeight:800,color:"#1A1A1A",lineHeight:1.4,marginBottom:5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.title}</div>
-                      <div style={{fontSize:16,fontWeight:900,color,marginBottom:5}}>{item.lprice?.toLocaleString()}원~</div>
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                        {item.rating>0&&<span style={{fontSize:10,fontWeight:800,color:"#FFB300"}}>★{item.rating.toFixed(1)}</span>}
-                        {item.reviewCount>0&&<span style={{fontSize:9,color:"#888"}}>💬 {item.reviewCount.toLocaleString()}</span>}
-                        {item.score>0&&!isEleven&&<span style={{fontSize:9,color:"#888"}}>🔥 {item.score.toLocaleString()}</span>}
-                        {item.brand&&<span style={{fontSize:9,color:"#aaa"}}>{item.brand}</span>}
-                      </div>
+                      <div style={{fontSize:15,fontWeight:900,color:"#FF7043",marginBottom:6}}>{item.lprice?.toLocaleString()}원~</div>
+                      {item.brand&&<div style={{fontSize:9,color:"#aaa"}}>{item.brand}</div>}
                     </div>
                   </div>
 
-                  <div style={{display:"flex",justifyContent:"flex-end",padding:"6px 14px 10px",borderTop:"1px solid #F5F0EB"}}>
-                    <div style={{fontSize:9,background:color,color:"#fff",borderRadius:6,padding:"3px 10px",fontWeight:800}}>바로가기 →</div>
+                  {/* 가격 + 네이버 뱃지 */}
+                  <div style={{margin:"0 14px 12px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:5,padding:"2px 7px",fontWeight:800}}>N 네이버</span>
+                    {item.brand&&<span style={{fontSize:9,color:"#aaa"}}>{item.brand}</span>}
+                    <span style={{fontSize:9,color:"#CCC",marginLeft:"auto"}}>별점·구매수는 쿠팡API 연동 후 표시</span>
+                  </div>
+
+                  {/* 하단 */}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px 10px",borderTop:"1px solid #F5F0EB"}}>
+                    <div style={{display:"flex",gap:6}}>
+                      {item.reviewCount>0&&sortBy!=="reviews"&&(
+                        <span style={{fontSize:9,color:"#888"}}>💬 {item.reviewCount?.toLocaleString()}</span>
+                      )}
+                      {item.score>0&&sortBy!=="sales"&&(
+                        <span style={{fontSize:9,color:"#888"}}>🔥 {item.score?.toLocaleString()}</span>
+                      )}
+                    </div>
+                    <div style={{fontSize:9,background:"#E8F5E9",color:"#2E7D32",borderRadius:6,padding:"3px 10px",fontWeight:800}}>N 바로가기 →</div>
                   </div>
                 </div>
               );
@@ -1518,9 +1488,7 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
         )}
 
         <div style={{marginTop:16,padding:"10px 14px",background:"#fff",borderRadius:12,border:"1px solid #EEE8E0"}}>
-          <div style={{fontSize:10,color:"#aaa",textAlign:"center"}}>
-            ✅ 네이버 · 11번가 연동 완료 &nbsp;|&nbsp; ⏳ 쿠팡 · 알리 · Temu 준비중
-          </div>
+          <div style={{fontSize:10,color:"#aaa",textAlign:"center"}}>네이버 쇼핑 실시간 데이터 · 다른 쇼핑몰 API 연동 예정</div>
         </div>
 
       </div>
@@ -1534,55 +1502,38 @@ function HomeTab({month,setMonth,bday,babyName,wish,onWish,setTab,setSelProd,act
 function ShopTab({month,setMonth,wish,onWish,setSelProd,activeShops,setActiveShops,initCat,setShopCat}){
   const initGrp=Math.max(0,MONTH_GROUPS.findIndex(g=>g.months.includes(month)));
   const [grpIdx,setGrpIdx]=useState(initGrp);
-  const [sort,setSort]=useState("score"),[cat,setCat]=useState(initCat&&initCat!=="전체"?initCat:"전체"),[q,setQ]=useState(""),[showAll,setShowAll]=useState(false);
-  const [selectedShops,setSelectedShops]=useState({naver:true,eleven:true});
-  const [naverItems,setNaverItems]=useState([]);
-  const [elevenItems,setElevenItems]=useState([]);
-  const [shopLoading,setShopLoading]=useState(false);
+  const [sort,setSort]=useState("score"),[cat,setCat]=useState(initCat&&initCat!=="전체"?initCat:"전체"),[q,setQ]=useState(""),[showAll,setShowAll]=useState(false),[showFilter,setShowFilter]=useState(false);
   useEffect(()=>{if(initCat&&initCat!=="전체"){setCat(initCat);if(setShopCat)setShopCat("전체");}}, [initCat]);
 
   const grp=MONTH_GROUPS[grpIdx];
   const prods=getGroupProds(grp.months);
   const cats=["전체",...new Set(prods.map(p=>p.cat))];
+  const shops=activeShops.length>0?activeShops:SHOP_NAMES;
 
-  // 실시간 검색
-  useEffect(()=>{
-    const keyword=(cat!=="전체"?cat+" ":"")+grp.short+"개월 아기용품";
-    setShopLoading(true);
-    setNaverItems([]);
-    setElevenItems([]);
-    const elevenSort=sort==="reviews"?"REVIEW":sort==="rating"?"RATING":"POPULAR";
-    const naverSort=sort==="price_asc"?"asc":"sim";
-    const fetchers=[];
-    if(selectedShops.naver) fetchers.push(fetchNaver(keyword,naverSort,15).then(r=>({src:"naver",items:r||[]})));
-    else fetchers.push(Promise.resolve({src:"naver",items:[]}));
-    if(selectedShops.eleven) fetchers.push(fetchEleven(keyword,elevenSort,15).then(r=>({src:"eleven",items:r||[]})));
-    else fetchers.push(Promise.resolve({src:"eleven",items:[]}));
-    Promise.all(fetchers).then(([nRes,eRes])=>{
-      let ns=[...nRes.items];
-      if(sort==="reviews") ns.sort((a,b)=>b.reviewCount-a.reviewCount);
-      if(sort==="sales")   ns.sort((a,b)=>b.score-a.score);
-      if(sort==="score")   ns.sort((a,b)=>(b.reviewCount+b.score*10)-(a.reviewCount+a.score*10));
-      setNaverItems(ns);
-      setElevenItems(eRes.items);
-      setShopLoading(false);
+  const filtered=useMemo(()=>{
+    let list=prods;
+    if(cat!=="전체")list=list.filter(p=>p.cat===cat);
+    if(q)list=list.filter(p=>p.name.includes(q)||p.brand.includes(q)||p.cat.includes(q));
+    return[...list].sort((a,b)=>{
+      if(sort==="score")return b.score-a.score;
+      if(sort==="reviews")return b.reviews-a.reviews;
+      if(sort==="rating")return b.rating-a.rating;
+      const sp_a=a.shopPrices||mkPrices(a.price);
+      const sp_b=b.shopPrices||mkPrices(b.price);
+      const minA=Math.min(...shops.map(s=>sp_a[s]||a.price));
+      const minB=Math.min(...shops.map(s=>sp_b[s]||b.price));
+      return sort==="price_asc"?minA-minB:minB-minA;
     });
-  },[grp,cat,sort,selectedShops]);
+  },[prods,cat,q,sort,shops]);
 
-  // 통합 결과
-  const mergedItems=useMemo(()=>{
-    const naver=(selectedShops.naver?naverItems:[]).map(i=>({...i,_src:"naver"}));
-    const eleven=(selectedShops.eleven?elevenItems:[]).map(i=>({...i,_src:"eleven"}));
-    if(!selectedShops.naver) return eleven;
-    if(!selectedShops.eleven) return naver;
-    const merged=[];
-    const maxLen=Math.max(naver.length,eleven.length);
-    for(let i=0;i<maxLen;i++){
-      if(naver[i]) merged.push(naver[i]);
-      if(eleven[i]) merged.push(eleven[i]);
-    }
-    return merged;
-  },[naverItems,elevenItems,selectedShops]);
+  const shown=showAll?filtered:filtered.slice(0,10);
+
+  function toggleShop(s){
+    setActiveShops(prev=>{
+      if(prev.includes(s)){if(prev.length===1)return prev;return prev.filter(x=>x!==s);}
+      return [...prev,s];
+    });
+  }
 
   return(
     <div style={{overflowY:"auto",flex:1,padding:"10px 12px 20px",background:"#FAFAFA"}}>
@@ -1603,39 +1554,26 @@ function ShopTab({month,setMonth,wish,onWish,setSelProd,activeShops,setActiveSho
         ))}
       </div>
 
-      {/* 쇼핑몰 체크박스 */}
-      <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:8}}>
-        {[
-          {k:"naver", l:"네이버", c:"#03C75A", active:true},
-          {k:"eleven",l:"11번가", c:"#E60000", active:true},
-          {k:"coupang",l:"쿠팡",  c:"#FF5733", active:false},
-          {k:"ali",   l:"알리",   c:"#FF4747", active:false},
-          {k:"temu",  l:"Temu",  c:"#FF6900", active:false},
-        ].map(({k,l,c,active})=>{
-          const checked=selectedShops[k];
-          return(
-            <button key={k}
-              onClick={()=>{
-                if(!active)return;
-                setSelectedShops(prev=>{
-                  const next={...prev,[k]:!prev[k]};
-                  if(!Object.values(next).some(Boolean))return prev;
-                  return next;
-                });
-              }}
-              style={{flexShrink:0,display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:20,
-                background:checked&&active?c:"#fff",
-                color:checked&&active?"#fff":active?"#555":"#CCC",
-                border:`2px solid ${checked&&active?c:active?"#DDD":"#EEE"}`,
-                fontWeight:800,fontSize:11,cursor:active?"pointer":"default",
-                transition:"all .2s",opacity:active?1:0.45,
-                boxShadow:checked&&active?`0 3px 10px ${c}40`:"none",
-              }}>
-              {active&&<span style={{fontSize:10}}>{checked?"✓":"○"}</span>}
-              {l}{!active&&<span style={{fontSize:8,color:"#CCC"}}> 준비중</span>}
-            </button>
-          );
-        })}
+      {/* 쇼핑몰 필터 */}
+      <div style={{marginBottom:7}}>
+        <button onClick={()=>setShowFilter(v=>!v)} style={{display:"flex",alignItems:"center",gap:5,background:CA,border:`1px solid ${BO}`,borderRadius:10,padding:"6px 11px",fontSize:11,fontWeight:700,color:TX,cursor:"pointer",marginBottom:showFilter?7:0}}>
+          🏪 쇼핑몰 선택 <span style={{color:P,fontWeight:900}}>({activeShops.length===0?`전체 ${SHOP_NAMES.length}개`:`${activeShops.length}개`})</span>
+          <span style={{marginLeft:"auto"}}>{showFilter?"▲":"▼"}</span>
+        </button>
+        {showFilter&&(
+          <div style={{background:CA,borderRadius:12,padding:"10px",border:`1px solid ${BO}`,display:"flex",flexWrap:"wrap",gap:6}}>
+            <button onClick={()=>setActiveShops([])} style={{background:activeShops.length===0?`linear-gradient(135deg,${P},${G})`:BG,color:activeShops.length===0?"#fff":MU,border:`1px solid ${BO}`,borderRadius:16,padding:"4px 10px",fontSize:10,fontWeight:800,cursor:"pointer"}}>전체</button>
+            {SHOP_NAMES.map(s=>{
+              const on=activeShops.includes(s)||activeShops.length===0;
+              const clr=SHOPS[s].color;
+              return(
+                <button key={s} onClick={()=>toggleShop(s)} style={{background:activeShops.includes(s)?`${clr}18`:activeShops.length===0?`${clr}10`:BG,color:activeShops.includes(s)||activeShops.length===0?clr:MU,border:`1.5px solid ${activeShops.includes(s)||activeShops.length===0?clr+"50":BO}`,borderRadius:16,padding:"4px 10px",fontSize:10,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>
+                  {activeShops.includes(s)&&activeShops.length>0?"✓ ":""}{s}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 카테고리 */}
@@ -1652,75 +1590,28 @@ function ShopTab({month,setMonth,wish,onWish,setSelProd,activeShops,setActiveSho
 
       {/* 정렬 */}
       <div style={{display:"flex",gap:4,overflowX:"auto",scrollbarWidth:"none",marginBottom:9}}>
-        {[{k:"score",l:"종합📊"},{k:"reviews",l:"리뷰💬"},{k:"rating",l:"별점⭐"},{k:"price_asc",l:"낮은가격"}].map(({k,l})=>(
-          <button key={k} onClick={()=>setSort(k)} style={{flexShrink:0,borderRadius:8,padding:"5px 10px",background:sort===k?"#FF7043":CA,color:sort===k?"#fff":MU,border:sort===k?"none":`1px solid ${BO}`,fontWeight:700,fontSize:10,cursor:"pointer"}}>{l}</button>
+        {[{k:"score",l:"종합📊"},{k:"reviews",l:"리뷰💬"},{k:"rating",l:"별점⭐"},{k:"price_asc",l:"낮은가격"},{k:"price_desc",l:"높은가격"}].map(({k,l})=>(
+          <button key={k} onClick={()=>setSort(k)} style={{flexShrink:0,borderRadius:8,padding:"3px 9px",background:sort===k?`linear-gradient(135deg,${P},${G})`:CA,color:sort===k?"#fff":MU,border:sort===k?"none":`1px solid ${BO}`,fontWeight:700,fontSize:10,cursor:"pointer"}}>{l}</button>
         ))}
       </div>
 
-      {/* 로딩 */}
-      {shopLoading&&(
-        <div style={{display:"flex",flexDirection:"column",gap:7}}>
-          {[1,2,3,4,5].map(i=>(
-            <div key={i} style={{background:"#fff",borderRadius:12,padding:"14px",border:"1px solid #EEE8E0",display:"flex",gap:10}}>
-              <div style={{width:64,height:64,borderRadius:10,background:"#F0EDE8",flexShrink:0,animation:"pulse 1.5s infinite"}}/>
-              <div style={{flex:1}}>
-                <div style={{height:13,background:"#F0EDE8",borderRadius:6,marginBottom:8,animation:"pulse 1.5s infinite"}}/>
-                <div style={{height:10,background:"#F0EDE8",borderRadius:6,width:"60%",animation:"pulse 1.5s infinite"}}/>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 통합 상품 리스트 */}
-      {!shopLoading&&mergedItems.length>0&&(
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {mergedItems.map((item,i)=>{
-            const isEleven=item._src==="eleven";
-            const color=isEleven?"#E60000":"#03C75A";
-            return(
-              <div key={i} onClick={()=>window.open(item.link,"_blank")}
-                style={{background:"#fff",borderRadius:14,border:`1.5px solid ${color}20`,cursor:"pointer",overflow:"hidden",boxShadow:"0 2px 6px rgba(0,0,0,0.04)"}}
-                onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"}
-                onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-              >
-                <div style={{background:color,padding:"3px 12px"}}>
-                  <span style={{fontSize:9,color:"#fff",fontWeight:900}}>{isEleven?"🔴 11번가":"🟢 네이버쇼핑"}</span>
-                </div>
-                <div style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px 8px"}}>
-                  {item.image
-                    ?<img src={item.image} alt={item.title} style={{width:62,height:62,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE8E0"}} onError={e=>e.target.style.display="none"}/>
-                    :<div style={{width:62,height:62,borderRadius:10,background:"#F5F0EB",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🛍️</div>
-                  }
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:800,color:"#1A1A1A",lineHeight:1.35,marginBottom:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.title}</div>
-                    <div style={{fontSize:14,fontWeight:900,color,marginBottom:4}}>{item.lprice?.toLocaleString()}원~</div>
-                    <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-                      {item.rating>0&&<span style={{fontSize:10,fontWeight:800,color:"#FFB300"}}>★{item.rating.toFixed(1)}</span>}
-                      {item.reviewCount>0&&<span style={{fontSize:9,color:"#888"}}>💬 {item.reviewCount.toLocaleString()}</span>}
-                      {item.brand&&<span style={{fontSize:9,color:"#aaa"}}>{item.brand}</span>}
-                    </div>
-                  </div>
-                </div>
-                <div style={{display:"flex",justifyContent:"flex-end",padding:"4px 12px 8px",borderTop:"1px solid #F5F0EB"}}>
-                  <div style={{fontSize:9,background:color,color:"#fff",borderRadius:6,padding:"3px 10px",fontWeight:800}}>바로가기 →</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {!shopLoading&&mergedItems.length===0&&(
-        <div style={{textAlign:"center",padding:"40px 0",color:"#aaa",background:"#fff",borderRadius:14,border:"1px solid #EEE8E0"}}>
-          <div style={{fontSize:32,marginBottom:6}}>🔍</div>
-          <div style={{fontSize:12}}>상품을 불러오는 중이에요</div>
-        </div>
-      )}
-
-      <div style={{marginTop:12,padding:"8px 12px",background:"#fff",borderRadius:10,border:"1px solid #EEE8E0"}}>
-        <div style={{fontSize:9,color:"#aaa",textAlign:"center"}}>✅ 네이버 · 11번가 연동 완료 &nbsp;|&nbsp; ⏳ 쿠팡 · 알리 · Temu 준비중</div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
+        <span style={{fontSize:11,fontWeight:700,color:MU}}>{month}개월 TOP {shown.length}</span>
+        <span style={{fontSize:9,color:MU}}>5개몰 통합</span>
       </div>
+
+      {filtered.length===0?(
+        <div style={{textAlign:"center",padding:"40px 0",color:MU,background:CA,borderRadius:14,border:`1px solid ${BO}`}}>
+          <div style={{fontSize:32,marginBottom:6}}>🔍</div><div style={{fontSize:12}}>검색 결과가 없어요</div>
+        </div>
+      ):(
+        <>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {shown.map((p,i)=>(<PCard key={p.id} p={p} rank={i+1} wished={!!wish.find(w=>w.id===p.id)} onWish={onWish} onClick={()=>setSelProd(p)} activeShops={activeShops}/>))}
+          </div>
+          {filtered.length>5&&(<button onClick={()=>setShowAll(v=>!v)} style={{width:"100%",marginTop:8,background:CA,border:`1px solid ${BO}`,borderRadius:12,padding:"10px",fontSize:12,fontWeight:800,color:MU,cursor:"pointer",boxSizing:"border-box"}}>{showAll?`▲ TOP 5만 보기`:`▼ 전체 ${filtered.length}개 더보기`}</button>)}
+        </>
+      )}
     </div>
   );
 }
@@ -2112,4 +2003,4 @@ export default function App(){
     </div>
   );
 }
-// 2026년  4월 14일 화요일 10시 30분 44초 KST
+// fix 2026년  4월 14일 화요일 10시 34분 04초 KST
