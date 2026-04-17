@@ -3,10 +3,7 @@
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.anthropic.com; connect-src 'self' https://api.anthropic.com"
-        }
+        {"key": "Content-Security-Policy", "value": "script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' /api/chat"}
       ]
     }
   ]
