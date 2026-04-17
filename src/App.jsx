@@ -861,7 +861,7 @@ price는 실제 판매 최저가(숫자만). 정렬기준: ${sortLabel}`;
       const m=text.match(/\{[\s\S]*"items"[\s\S]*\}/);
       if(m){
         try{
-          const parsed=JSON.parse(m[0]);
+          const parsed=JSON.parse(m[0].replace(/[\x00-\x1F]/g,""));
           let arr=parsed.items||[];
           if(sortBy==="price_asc") arr.sort((a,b)=>a.price-b.price);
           else if(sortBy==="reviews") arr.sort((a,b)=>b.reviewCount-a.reviewCount);
