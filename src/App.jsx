@@ -623,7 +623,7 @@ async function fetchMallPrices(productName) {
 
 price는 실제 판매 최저가 숫자(원 단위). 정보 없으면 기준가에서 ±10% 내 추정값 입력.`;
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -845,7 +845,7 @@ function useLiveItems(keyword, sortBy){
 ]}
 price는 실제 판매 최저가(숫자만). 정렬기준: ${sortLabel}`;
 
-    fetch("https://api.anthropic.com/v1/messages",{
+    fetch("/api/chat",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
