@@ -623,7 +623,7 @@ async function fetchMallPrices(productName) {
 
 price는 실제 판매 최저가 숫자(원 단위). 정보 없으면 기준가에서 ±10% 내 추정값 입력.`;
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -814,8 +814,7 @@ function PriceComparePanel({ productName, basePrice }) {
 }
 
 /* ═══════════ 실시간 그룹 상품 훅 (홈·쇼핑탭용) ══════════ */
-/* ═══════════ 전체 쇼핑몰 통합 상품 훅 ══════════ */
-// 모든 몰 상품을 Claude AI + web_search로 한 번에 가져옴
+/* ═══════════ 네이버쇼핑 무료 API 연동 ══════════ */
 function useLiveItems(keyword, sortBy){
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -825,53 +824,55 @@ function useLiveItems(keyword, sortBy){
     setLoading(true);
     setItems([]);
 
-    const sortLabel = sortBy==="price_asc"?"가격 낮은순":sortBy==="reviews"?"리뷰 많은순":sortBy==="rating"?"별점 높은순":"인기순";
+    const naverSort = sortBy==="price_asc"?"asc":sortBy==="reviews"?"comment":sortBy==="rating"?"grade":"sim";
+    const elevenSort = sortBy==="price_asc"?"PRICE_ASC":sortBy==="reviews"?"REVIEW":sortBy==="rating"?"REVIEW":"POPULAR";
 
-    const prompt = `"${keyword}" 육아용품을 아래 10개 쇼핑몰에서 실제 검색해서 각 몰의 인기 상품 1~2개씩 찾아줘.
-쇼핑몰: 쿠팡, 네이버쇼핑, 11번가, G마켓, 옥션, SSG닷컴, 롯데온, 위메프, 티몬, 인터파크
+    // 네이버 + 11번가 동시 호출
+    const naverFetch = fetch(`/api/naver?query=${encodeURIComponent(keyword)}&sort=${naverSort}&display=15`)
+      .then(r=>r.json())
+      .then(data=>(data.items||[]).map(item=>({
+        mall:"네이버쇼핑",
+        title: item.title?.replace(/<[^>]+>/g,"")||"",
+        price: parseInt(item.lprice)||0,
+        image: item.image||"",
+        rating: parseFloat(item.grade)||0,
+        reviewCount: parseInt(item.reviewCount)||0,
+        badge: item.mallName||"네이버",
+        link: item.link||`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(keyword)}`,
+        mallColor:"#03C75A", mallBg:"#F0FFF6",
+      })))
+      .catch(()=>[]);
 
-반드시 JSON만 답해줘 (코드블록, 설명 없이):
-{"items":[
-  {"mall":"쿠팡","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.7,"reviewCount":리뷰수,"badge":"로켓배송","link":"https://www.coupang.com/np/search?q=${encodeURIComponent(keyword)}","mallColor":"#E8140E","mallBg":"#FFF0F0"},
-  {"mall":"네이버쇼핑","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.8,"reviewCount":리뷰수,"badge":"포인트적립","link":"https://search.shopping.naver.com/search/all?query=${encodeURIComponent(keyword)}","mallColor":"#03C75A","mallBg":"#F0FFF6"},
-  {"mall":"11번가","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.6,"reviewCount":리뷰수,"badge":"카드할인","link":"https://search.11st.co.kr/Search.tmall?kwd=${encodeURIComponent(keyword)}","mallColor":"#E60000","mallBg":"#FFF0F0"},
-  {"mall":"G마켓","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.5,"reviewCount":리뷰수,"badge":"스마일배송","link":"https://browse.gmarket.co.kr/search?keyword=${encodeURIComponent(keyword)}","mallColor":"#F9A825","mallBg":"#FFFDE7"},
-  {"mall":"옥션","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.4,"reviewCount":리뷰수,"badge":"빅딜","link":"https://browse.auction.co.kr/search?keyword=${encodeURIComponent(keyword)}","mallColor":"#E91E63","mallBg":"#FCE4EC"},
-  {"mall":"SSG닷컴","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.5,"reviewCount":리뷰수,"badge":"SSG머니","link":"https://www.ssg.com/search.ssg?query=${encodeURIComponent(keyword)}","mallColor":"#7B1FA2","mallBg":"#F3E5F5"},
-  {"mall":"롯데온","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.3,"reviewCount":리뷰수,"badge":"롯데포인트","link":"https://www.lotteon.com/search/search?query=${encodeURIComponent(keyword)}","mallColor":"#D32F2F","mallBg":"#FFEBEE"},
-  {"mall":"위메프","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.4,"reviewCount":리뷰수,"badge":"오늘특가","link":"https://www.wemakeprice.com/search/main?searchkeyword=${encodeURIComponent(keyword)}","mallColor":"#C62828","mallBg":"#FFEBEE"},
-  {"mall":"티몬","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.3,"reviewCount":리뷰수,"badge":"슈퍼딜","link":"https://www.tmon.co.kr/deal/search.tmon?keyword=${encodeURIComponent(keyword)}","mallColor":"#1565C0","mallBg":"#E3F2FD"},
-  {"mall":"인터파크","title":"실제상품명","price":실제가격숫자,"image":"","rating":4.4,"reviewCount":리뷰수,"badge":"포인트","link":"https://shopping.interpark.com/product/productList.do?sch_flag=1&sch_txt=${encodeURIComponent(keyword)}","mallColor":"#1976D2","mallBg":"#E3F2FD"}
-]}
-price는 실제 판매 최저가(숫자만). 정렬기준: ${sortLabel}`;
+    const elevenFetch = fetch(`/api/eleven?query=${encodeURIComponent(keyword)}&sort=${elevenSort}&display=15`)
+      .then(r=>r.json())
+      .then(data=>(data.items||[]).map(item=>({
+        mall:"11번가",
+        title: item.productName||item.title||"",
+        price: parseInt(item.price||item.salePrice)||0,
+        image: item.productImage||item.imageUrl||"",
+        rating: parseFloat(item.reviewScore)||0,
+        reviewCount: parseInt(item.reviewCount)||0,
+        badge: item.benefitLabel||"11번가",
+        link: item.productUrl||`https://search.11st.co.kr/Search.tmall?kwd=${encodeURIComponent(keyword)}`,
+        mallColor:"#E60000", mallBg:"#FFF0F0",
+      })))
+      .catch(()=>[]);
 
-    fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:2000,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        messages:[{role:"user",content:prompt}]
-      })
-    })
-    .then(r=>r.json())
-    .then(data=>{
-      const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
-      const m=text.match(/\{[\s\S]*"items"[\s\S]*\}/);
-      if(m){
-        try{
-          const parsed=JSON.parse(m[0]);
-          let arr=parsed.items||[];
-          if(sortBy==="price_asc") arr.sort((a,b)=>a.price-b.price);
-          else if(sortBy==="reviews") arr.sort((a,b)=>b.reviewCount-a.reviewCount);
-          else if(sortBy==="rating") arr.sort((a,b)=>b.rating-a.rating);
-          setItems(arr);
-        }catch(e){ setItems([]); }
+    Promise.all([naverFetch, elevenFetch]).then(([naver, eleven])=>{
+      // 인터리빙: 네이버1, 11번가1, 네이버2, 11번가2...
+      const merged = [];
+      const max = Math.max(naver.length, eleven.length);
+      for(let i=0; i<max; i++){
+        if(naver[i]) merged.push(naver[i]);
+        if(eleven[i]) merged.push(eleven[i]);
       }
+      let arr = merged;
+      if(sortBy==="price_asc") arr.sort((a,b)=>a.price-b.price);
+      else if(sortBy==="reviews") arr.sort((a,b)=>b.reviewCount-a.reviewCount);
+      else if(sortBy==="rating") arr.sort((a,b)=>b.rating-a.rating);
+      setItems(arr);
       setLoading(false);
-    })
-    .catch(()=>setLoading(false));
+    });
   },[keyword, sortBy]);
 
   return {items, loading};
@@ -978,29 +979,19 @@ const MALL_LIST = [
   {k:"temu",     l:"테무",       c:"#BF360C", bg:"#FBE9E7", api:false, emoji:"🌐"},
 ];
 
-/* 쇼핑몰 선택 — 컴팩트 버전 */
-function MallSelector({selected, onChange}){
+/* 쇼핑몰 선택 — 네이버 + 11번가 */
+function MallSelector(){
   return(
-    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10,alignItems:"center"}}>
-      <span style={{fontSize:9,color:MU,fontWeight:700,whiteSpace:"nowrap"}}>검색몰:</span>
-      {MALL_LIST.map(({k,l,c,bg,api,emoji})=>{
-        const checked=selected[k];
-        if(!api) return null; // 비-API 몰은 여기서 숨김 (결과에 자동 포함됨)
-        return(
-          <button key={k} onClick={()=>onChange(prev=>{
-            const next={...prev,[k]:!prev[k]};
-            const apiKeys=MALL_LIST.filter(m=>m.api).map(m=>m.k);
-            if(!apiKeys.some(ak=>next[ak]))return prev;
-            return next;
-          })} style={{display:"flex",alignItems:"center",gap:3,padding:"4px 8px",borderRadius:12,
-            background:checked?c:"rgba(0,0,0,0.04)",color:checked?"#fff":"#666",
-            border:`1.5px solid ${checked?c:"#DDD"}`,
-            fontWeight:800,fontSize:10,cursor:"pointer",
-            boxShadow:checked?`0 2px 6px ${c}40`:"none"}}>
-            {l}{checked&&" ✓"}
-          </button>
-        );
-      })}
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+      <span style={{fontSize:9,color:MU,fontWeight:700}}>실시간 검색:</span>
+      <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,background:"#F0FFF6",border:"1.5px solid #03C75A40"}}>
+        <span style={{fontSize:10,color:"#03C75A",fontWeight:900}}>🟢 네이버쇼핑</span>
+        <span style={{fontSize:8,color:"#03C75A",background:"#03C75A15",padding:"1px 4px",borderRadius:4,fontWeight:700}}>가격·별점·리뷰</span>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,background:"#FFF0F0",border:"1.5px solid #E6000040"}}>
+        <span style={{fontSize:10,color:"#E60000",fontWeight:900}}>🔴 11번가</span>
+        <span style={{fontSize:8,color:"#E60000",background:"#E6000015",padding:"1px 4px",borderRadius:4,fontWeight:700}}>가격·이미지</span>
+      </div>
     </div>
   );
 }
@@ -1008,7 +999,7 @@ function MallSelector({selected, onChange}){
 
 
 
-function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct}){
+function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct,onSelectGuide}){
   const autoMonth=calcMonth(bday);
   const [sortBy,setSortBy]=useState("score");
   const [selected,setSelected]=useState({naver:true,eleven:true});
@@ -1025,16 +1016,19 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
   return(
     <div style={{overflowY:"auto",flex:1}}>
       {/* 헤더 */}
-      <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",padding:"16px 16px 18px",position:"relative",overflow:"hidden"}}>
-        {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:13+i,left:`${(i*11)%90}%`,bottom:"-5%",opacity:.4,animation:`floatUp ${6+i}s ${i*0.5}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
+      <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",padding:"10px 14px 12px",position:"relative",overflow:"hidden"}}>
+        {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:13+i,left:`${(i*11)%90}%`,bottom:"-5%",opacity:.3,animation:`floatUp ${6+i}s ${i*0.5}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
         <div style={{position:"relative",zIndex:1}}>
           {bday&&autoMonth!==null?(
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:14,fontWeight:900,color:P}}>{babyName||"아기"}는 지금 <span style={{fontSize:18}}>🌟 {autoMonth}개월</span>이에요!</div>
-              <div style={{fontSize:11,color:MU,marginTop:2}}>{getGroupByMonth(autoMonth).emoji} {getGroupByMonth(autoMonth).label} · {getGroupByMonth(autoMonth).sub}</div>
+            <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:16}}>🌟</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:900,color:P}}>{babyName||"아기"} · {autoMonth}개월</div>
+                <div style={{fontSize:9,color:MU}}>{getGroupByMonth(autoMonth).emoji} {getGroupByMonth(autoMonth).label} · {getGroupByMonth(autoMonth).sub}</div>
+              </div>
             </div>
           ):(
-            <div style={{fontSize:12,color:MU,marginBottom:8,fontWeight:600}}>개월 수를 선택해주세요 👶</div>
+            <div style={{fontSize:11,color:MU,marginBottom:6,fontWeight:600}}>개월 수를 선택하세요 👶</div>
           )}
           {/* 그룹 버튼 */}
           <div style={{display:"flex",gap:5,paddingBottom:4}}>
@@ -1061,49 +1055,61 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
         </div>
       </div>
 
-      <div style={{padding:"14px 14px 28px"}}>
+      <div style={{padding:"10px 14px 28px"}}>
 
-        {/* 가이드 */}
-        <div style={{marginBottom:14}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-            <div style={{fontSize:13,fontWeight:900,color:TX}}>📚 초보 부모 가이드</div>
-            <button onClick={()=>setTab("guide")} style={{fontSize:11,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체보기 →</button>
+        {/* 가이드 — 2열 그리드 한눈에 */}
+        <div style={{marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
+            <div style={{fontSize:12,fontWeight:900,color:TX}}>📚 초보 부모 가이드</div>
+            <button onClick={()=>setTab("guide")} style={{fontSize:10,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체보기 →</button>
           </div>
-          <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
             {GUIDES.map(g=>(
-              <button key={g.id} onClick={()=>setTab("guide")} style={{flexShrink:0,display:"flex",alignItems:"center",gap:7,padding:"8px 11px",background:`${g.color}12`,border:`1.5px solid ${g.color}35`,borderRadius:12,cursor:"pointer"}}>
-                <span style={{fontSize:16}}>{g.emoji}</span>
-                <div style={{textAlign:"left"}}>
-                  <div style={{fontSize:9,fontWeight:800,color:g.color}}>{g.tag}</div>
-                  <div style={{fontSize:11,fontWeight:800,color:TX,whiteSpace:"nowrap"}}>{g.title.length>10?g.title.slice(0,10)+"..":g.title}</div>
+              <button key={g.id} onClick={()=>onSelectGuide(g)}
+                style={{display:"flex",alignItems:"center",gap:8,padding:"9px 10px",
+                  background:`linear-gradient(135deg,${g.color}15,${g.color}08)`,
+                  border:`1.5px solid ${g.color}30`,borderRadius:12,cursor:"pointer",textAlign:"left",
+                  boxShadow:`0 2px 8px ${g.color}15`}}>
+                <span style={{fontSize:18,flexShrink:0}}>{g.emoji}</span>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:8,fontWeight:800,color:g.color,marginBottom:1}}>{g.tag}</div>
+                  <div style={{fontSize:11,fontWeight:900,color:TX,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{g.title}</div>
                 </div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 카테고리 */}
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:800,color:MU,letterSpacing:.8,marginBottom:7}}>카테고리</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {/* 카테고리 — 한줄 꽉 차게 */}
+        <div style={{marginBottom:12}}>
+          <div style={{display:"grid",gridTemplateColumns:`repeat(${cats.length},1fr)`,gap:4}}>
             {cats.map((cat,i)=>(
-              <button key={cat} onClick={()=>setTab("shop")} style={{background:`${catColors[i%catColors.length]}18`,color:catColors[i%catColors.length],border:`1.5px solid ${catColors[i%catColors.length]}40`,borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>{cat}</button>
+              <button key={cat} onClick={()=>setTab("shop")}
+                style={{background:`linear-gradient(135deg,${catColors[i%catColors.length]}22,${catColors[i%catColors.length]}10)`,
+                  color:catColors[i%catColors.length],
+                  border:`1.5px solid ${catColors[i%catColors.length]}40`,
+                  borderRadius:10,padding:"7px 2px",fontSize:10,fontWeight:900,cursor:"pointer",
+                  textAlign:"center",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {cat}
+              </button>
             ))}
           </div>
         </div>
 
         {/* 실시간 비교 */}
         <div style={{marginBottom:10}}>
-          <div style={{fontSize:14,fontWeight:900,color:TX,marginBottom:2}}>🛍️ 쇼핑몰 실시간 가격 비교</div>
-          <div style={{fontSize:10,color:MU,marginBottom:10}}>{curGroup.emoji} {curGroup.label} · {curGroup.sub}</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+            <div style={{fontSize:13,fontWeight:900,color:TX}}>🛍️ 쇼핑몰 실시간 가격 비교</div>
+            <span style={{fontSize:9,color:MU}}>{curGroup.emoji} {curGroup.label}</span>
+          </div>
 
-          {/* 쇼핑몰 선택 (네이버·11번가 AI 검색 토글) */}
-          <MallSelector selected={selected} onChange={setSelected}/>
+          {/* 쇼핑몰 선택 */}
+          <MallSelector/>
 
           {/* 정렬 */}
-          <div style={{display:"flex",gap:6,marginBottom:12}}>
+          <div style={{display:"flex",gap:5,marginBottom:10}}>
             {[{k:"score",l:"종합순"},{k:"sales",l:"판매순"},{k:"reviews",l:"리뷰순"},{k:"rating",l:"별점순"},{k:"price_asc",l:"낮은가격"}].map(({k,l})=>(
-              <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"7px 2px",borderRadius:8,background:sortBy===k?P:"#fff",color:sortBy===k?"#fff":MU,border:sortBy===k?"none":`1px solid ${BO}`,fontWeight:sortBy===k?900:600,fontSize:9,cursor:"pointer",transition:"all .15s"}}>{l}</button>
+              <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"6px 2px",borderRadius:8,background:sortBy===k?P:"#fff",color:sortBy===k?"#fff":MU,border:sortBy===k?"none":`1px solid ${BO}`,fontWeight:sortBy===k?900:600,fontSize:9,cursor:"pointer"}}>{l}</button>
             ))}
           </div>
 
@@ -1114,8 +1120,8 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
             </div>
           ):items.length===0?(
             <div style={{textAlign:"center",padding:"32px 0",color:MU,background:CA,borderRadius:14,border:`1px solid ${BO}`}}>
-              <div style={{fontSize:32,marginBottom:8}}>🔍</div>
-              <div style={{fontSize:13}}>상품을 불러오는 중이에요</div>
+              <div style={{fontSize:28,marginBottom:6}}>🔍</div>
+              <div style={{fontSize:12}}>잠시만요, 10개 몰 검색 중이에요...</div>
             </div>
           ):(
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1123,8 +1129,8 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
             </div>
           )}
 
-          <div style={{marginTop:12,padding:"8px 12px",background:CA,borderRadius:10,border:`1px solid ${BO}`}}>
-            <div style={{fontSize:9,color:MU,textAlign:"center"}}>🤖 Claude AI가 쿠팡·네이버·11번가·G마켓·옥션 등 10개 몰 실시간 검색</div>
+          <div style={{marginTop:10,padding:"7px 12px",background:CA,borderRadius:10,border:`1px solid ${BO}`}}>
+            <div style={{fontSize:9,color:MU,textAlign:"center"}}>🤖 Claude AI · 쿠팡·네이버·11번가·G마켓·옥션 등 10개 몰 실시간 검색</div>
           </div>
         </div>
       </div>
@@ -1183,7 +1189,7 @@ function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
       </div>
 
       {/* 쇼핑몰 선택 */}
-      <MallSelector selected={selected} onChange={setSelected}/>
+      <MallSelector/>
 
       {/* 카테고리 */}
       <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",marginBottom:7}}>
@@ -1223,11 +1229,14 @@ function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
 }
 
 /* ═══════════ GUIDE TAB ══════════ */
-function GuideTab(){
-  const [sel,setSel]=useState(null);
+function GuideTab({initialGuide, onClearGuide}){
+  const [sel,setSel]=useState(initialGuide||null);
+  // initialGuide가 바뀌면 바로 열기
+  useEffect(()=>{ if(initialGuide){setSel(initialGuide);} },[initialGuide]);
+  const handleClose=()=>{ setSel(null); if(onClearGuide)onClearGuide(); };
   return(
     <div style={{overflowY:"auto",flex:1,padding:"14px 14px 24px"}}>
-      {sel&&<GuideDetail guide={sel} onClose={()=>setSel(null)}/>}
+      {sel&&<GuideDetail guide={sel} onClose={handleClose}/>}
       <div style={{fontSize:14,fontWeight:900,color:TX,marginBottom:4}}>📚 초보 부모 완전 가이드</div>
       <div style={{fontSize:12,color:MU,marginBottom:16}}>궁금한 것을 탭해보세요 💕</div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -1407,6 +1416,7 @@ export default function App(){
   const [showWish,setShowWish]= useState(false);
   const [showAuth,setShowAuth]= useState(false);
   const [selProd, setSelProd] = useState(null);
+  const [selGuide, setSelGuide] = useState(null);
   const [toast,   setToast]   = useState(null);
 
   useEffect(()=>{const t=setTimeout(()=>setSplash(false),1500);return()=>clearTimeout(t);},[]);
@@ -1434,7 +1444,7 @@ export default function App(){
       {splash&&<Splash/>}
       {/* TOP BAR */}
       <div style={{background:CA,padding:"12px 16px 10px",borderBottom:`1px solid ${BO}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:`0 2px 12px rgba(255,112,67,0.07)`}}>
-        <div style={{display:"flex",alignItems:"center",gap:9}}>
+        <div style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}} onClick={()=>setTab("home")}>
           <span style={{fontSize:24,animation:"spin 8s linear infinite",display:"inline-block"}}>☀️</span>
           <div>
             <div style={{fontSize:21,fontWeight:900,letterSpacing:-1,lineHeight:1,background:`linear-gradient(135deg,${P},${G})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>HANA</div>
@@ -1454,9 +1464,9 @@ export default function App(){
       </div>
       {/* CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-        {tab==="home"&&<HomeTab month={month} setMonth={setMonth} babyName={babyName} bday={bday} wish={wish} onWish={toggleWish} onCart={addCart} setTab={setTab} onSelectProduct={setSelProd}/>}
+        {tab==="home"&&<HomeTab month={month} setMonth={setMonth} babyName={babyName} bday={bday} wish={wish} onWish={toggleWish} onCart={addCart} setTab={setTab} onSelectProduct={setSelProd} onSelectGuide={g=>{setSelGuide(g);setTab("guide");}}/>}
         {tab==="shop"&&<ShopTab month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onCart={addCart} onSelectProduct={setSelProd}/>}
-        {tab==="guide"&&<GuideTab/>}
+        {tab==="guide"&&<GuideTab initialGuide={selGuide} onClearGuide={()=>setSelGuide(null)}/>}
         {tab==="profile"&&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} cart={cart} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
       </div>
       {/* BOTTOM NAV */}
