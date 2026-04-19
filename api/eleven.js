@@ -1,3 +1,5 @@
+import iconv from 'iconv-lite';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
@@ -5,11 +7,12 @@ export default async function handler(req, res) {
   const { query, sort = 'POPULAR', display = 15 } = req.query;
   
   try {
-    // charset=UTF-8 파라미터 추가 + HTTPS
-    const url = `https://openapi.11st.co.kr/openapi/OpenApiService.tmall?key=${process.env.ELEVEN_API_KEY}&apiCode=ProductSearch&keyword=${encodeURIComponent(query)}&sortCd=${sort}&pageSize=${display}&charset=UTF-8`;
+    const url = `http://openapi.11st.co.kr/openapi/OpenApiService.tmall?key=${process.env.ELEVEN_API_KEY}&apiCode=ProductSearch&keyword=${encodeURIComponent(query)}&sortCd=${sort}&pageSize=${display}`;
     
     const response = await fetch(url);
-    const xml = await response.text();
+    const buffer = Buffer.from(await response.arrayBuffer());
+    // EUC-KR → UTF-8 변환
+    const xml = iconv.decode(buffer, 'euc-kr');
 
     const items = [];
     const productRegex = /<Product>([\s\S]*?)<\/Product>/g;
@@ -31,6 +34,7 @@ export default async function handler(req, res) {
       const price  = get('ProductPrice');
       const link   = get('ProductDetailUrl') || get('ProductUrl');
       const review = get('ReviewCount');
+      const score  = get('ReviewScore');
 
       if (name && price) {
         items.push({
@@ -39,7 +43,7 @@ export default async function handler(req, res) {
           salePrice:    price,
           productImage: image,
           reviewCount:  review || '0',
-          reviewScore:  '0',
+          reviewScore:  score  || '0',
           productUrl:   link || `https://search.11st.co.kr/Search.tmall?kwd=${encodeURIComponent(query)}`,
           benefitLabel: '11번가',
         });
