@@ -344,7 +344,7 @@ function Splash() {
       {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:14+i,left:`${(i*9)%90}%`,bottom:"-5%",opacity:.4,animation:`floatUp ${5+i}s ${i*0.4}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
       <div style={{textAlign:"center",zIndex:1,padding:"0 20px"}}>
         <div style={{fontSize:72,animation:"spinBounce 1.2s ease",marginBottom:16}}>☀️</div>
-        <div style={{fontSize:48,fontWeight:900,letterSpacing:-2,background:`linear-gradient(135deg,${P},${G})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:12}}>HANA</div>
+        <div style={{fontSize:52,fontWeight:900,letterSpacing:-2,color:"#FF7043",marginBottom:12,textShadow:"2px 2px 0px #FFB347"}}>HANA</div>
         <div style={{fontSize:16,color:TX,fontWeight:700,lineHeight:1.8,marginBottom:8}}>
           초보 엄마아빠를 위한<br/><span style={{color:P,fontWeight:900}}>궁금증 해소</span> 💕
         </div>
