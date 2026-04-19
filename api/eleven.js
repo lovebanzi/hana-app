@@ -1,6 +1,5 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
   const { query, sort = 'POPULAR', display = 15 } = req.query;
@@ -10,42 +9,39 @@ export default async function handler(req, res) {
     const response = await fetch(url);
     const xml = await response.text();
 
-    // 디버그용 원본 XML 일부 반환 (개발 확인용)
-    if (req.query.debug) {
-      res.status(200).json({ raw: xml.slice(0, 2000) });
-      return;
-    }
-
     const items = [];
-    // 11번가 XML 파싱 - 다양한 태그명 시도
-    const productRegex = /<Product>([\s\S]*?)<\/Product>|<product>([\s\S]*?)<\/product>/g;
+    const productRegex = /<Product>([\s\S]*?)<\/Product>/g;
     let match;
-    while ((match = productRegex.exec(xml)) !== null) {
-      const block = match[1] || match[2];
-      const get = (tags) => {
-        for (const tag of tags) {
-          const m = block.match(new RegExp(`<${tag}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}>([^<]*)<\\/${tag}>`, 'i'));
-          if (m) return (m[1] || m[2] || '').trim();
-        }
-        return '';
-      };
-      
-      const name = get(['ProductName','productName','PRODUCTNAME','name']);
-      const price = get(['price','Price','PRICE','salePrice','SalePrice']);
-      const image = get(['ProductImage','productImage','imageUrl','ImageUrl','thumbImage']);
-      const link = get(['ProductUrl','productUrl','DetailUrl','detailUrl']);
-      const review = get(['ReviewCount','reviewCount','REVIEWCOUNT']);
-      const score = get(['ReviewScore','reviewScore','grade','Grade']);
 
-      if (name) {
+    while ((match = productRegex.exec(xml)) !== null) {
+      const block = match[1];
+      
+      // CDATA와 일반 태그 모두 파싱
+      const get = (tag) => {
+        const re = new RegExp(`<${tag}>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([^<]*))<\\/${tag}>`, 'i');
+        const m = block.match(re);
+        return (m ? (m[1] || m[2] || '') : '').trim();
+      };
+
+      // 이미지 — ProductImage100 사용 (적당한 크기)
+      const imgMatch = block.match(/<ProductImage100>(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]*))<\/ProductImage100>/i);
+      const image = imgMatch ? (imgMatch[1] || imgMatch[2] || '').trim() : '';
+
+      const name  = get('ProductName');
+      const price = get('ProductPrice');
+      const link  = get('ProductDetailUrl') || get('ProductUrl');
+      const review = get('ReviewCount');
+      const score  = get('ReviewScore');
+
+      if (name && price) {
         items.push({
-          productName: name,
-          price: price,
-          salePrice: price,
+          productName:  name,
+          price:        price,
+          salePrice:    price,
           productImage: image,
-          reviewCount: review,
-          reviewScore: score,
-          productUrl: link || `https://search.11st.co.kr/Search.tmall?kwd=${encodeURIComponent(query)}`,
+          reviewCount:  review || '0',
+          reviewScore:  score  || '0',
+          productUrl:   link || `https://search.11st.co.kr/Search.tmall?kwd=${encodeURIComponent(query)}`,
           benefitLabel: '11번가',
         });
       }
