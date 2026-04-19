@@ -623,7 +623,7 @@ async function fetchMallPrices(productName) {
 
 price는 실제 판매 최저가 숫자(원 단위). 정보 없으면 기준가에서 ±10% 내 추정값 입력.`;
 
-    const res = await fetch("/api/chat", {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -845,7 +845,7 @@ function useLiveItems(keyword, sortBy){
 ]}
 price는 실제 판매 최저가(숫자만). 정렬기준: ${sortLabel}`;
 
-    fetch("/api/chat",{
+    fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
@@ -861,7 +861,7 @@ price는 실제 판매 최저가(숫자만). 정렬기준: ${sortLabel}`;
       const m=text.match(/\{[\s\S]*"items"[\s\S]*\}/);
       if(m){
         try{
-          const parsed=JSON.parse(m[0].replace(/[\x00-\x1F]/g,""));
+          const parsed=JSON.parse(m[0]);
           let arr=parsed.items||[];
           if(sortBy==="price_asc") arr.sort((a,b)=>a.price-b.price);
           else if(sortBy==="reviews") arr.sort((a,b)=>b.reviewCount-a.reviewCount);
