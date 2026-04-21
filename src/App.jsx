@@ -46,8 +46,14 @@ function getGroupProducts(groupId){
   return result;
 }
 function getGroupKeyword(groupId){
-  const kw={g0:"신생아",g1:"1~3개월 아기",g2:"4~6개월 아기",g3:"7~9개월 아기",g4:"10~12개월 아기"};
-  return kw[groupId]||"아기";
+  const kw={
+    g0:"신생아용품",
+    g1:"1~3개월 아기용품",
+    g2:"4~6개월 아기용품",
+    g3:"7~9개월 아기용품",
+    g4:"10~12개월 아기용품"
+  };
+  return kw[groupId]||"아기용품";
 }
 
 /* ═══════════ PRODUCTS (10몰 통합분석) ══════════ */
@@ -344,7 +350,7 @@ function Splash() {
       {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:14+i,left:`${(i*9)%90}%`,bottom:"-5%",opacity:.4,animation:`floatUp ${5+i}s ${i*0.4}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
       <div style={{textAlign:"center",zIndex:1,padding:"0 20px"}}>
         <div style={{fontSize:72,animation:"spinBounce 1.2s ease",marginBottom:16}}>☀️</div>
-        <div style={{fontSize:52,fontWeight:900,letterSpacing:-2,color:"#FF7043",marginBottom:12,textShadow:"2px 2px 0px #FFB347"}}>HANA</div>
+        <div style={{fontSize:52,fontWeight:900,letterSpacing:-2,color:P,marginBottom:12,textShadow:`2px 2px 0px ${G}`}}>HANA</div>
         <div style={{fontSize:16,color:TX,fontWeight:700,lineHeight:1.8,marginBottom:8}}>
           초보 엄마아빠를 위한<br/><span style={{color:P,fontWeight:900}}>궁금증 해소</span> 💕
         </div>
@@ -475,31 +481,166 @@ function AuthModal({ onClose, onLogin }) {
 }
 
 /* ═══════════ GUIDE DETAIL SHEET ══════════ */
+/* ═══════════ 가이드별 추천 상품 키워드 ══════════ */
+const GUIDE_KEYWORDS = {
+  g1: "신생아 필수품 세트",       // 출산 전 꼭 사야 할 것
+  g2: "아기 치발기",              // 나중에 사도 돼요
+  g3: "신생아 젖병",              // 신생아 수유 완전 가이드
+  g4: "이유식 스푼 세트",         // 이유식 단계별 완전 가이드
+  g5: "아기 속싸개",              // 아기 수면 완전 가이드
+  g6: "아기 딸랑이",              // 아기 발달 단계 체크리스트
+};
+
+/* ═══════════ 가이드 추천 상품 컴포넌트 ══════════ */
+function GuideProduct({ guideId, color }) {
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const keyword = GUIDE_KEYWORDS[guideId];
+
+  useEffect(() => {
+    if (!keyword) { setLoading(false); return; }
+    fetch(`/api/naver?query=${encodeURIComponent(keyword)}&sort=sim&display=1`)
+      .then(r => r.json())
+      .then(data => {
+        const item = data.items?.[0];
+        if (item) setProduct(item);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [keyword]);
+
+  if (loading) return (
+    <div style={{background:CA,borderRadius:14,padding:"12px 14px",border:`1px solid ${BO}`,marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:56,height:56,borderRadius:10,background:"#F0EDE8",flexShrink:0,animation:"pulse 1.5s infinite"}}/>
+      <div style={{flex:1}}>
+        <div style={{height:10,background:"#F0EDE8",borderRadius:6,marginBottom:7,animation:"pulse 1.5s infinite"}}/>
+        <div style={{height:10,background:"#F0EDE8",borderRadius:6,width:"60%",animation:"pulse 1.5s infinite"}}/>
+      </div>
+    </div>
+  );
+
+  if (!product) return null;
+
+  const title = product.title?.replace(/<[^>]+>/g, "") || "";
+  const price = parseInt(product.lprice || 0).toLocaleString();
+
+  return (
+    <a href={product.link} target="_blank" rel="noopener noreferrer"
+      style={{display:"flex",alignItems:"center",gap:10,background:`linear-gradient(135deg,${color}10,${color}05)`,
+        borderRadius:14,padding:"11px 13px",border:`1.5px solid ${color}30`,
+        marginBottom:12,textDecoration:"none",boxShadow:`0 2px 10px ${color}15`}}>
+      {/* 이미지 */}
+      {product.image
+        ? <img src={product.image} alt={title} style={{width:56,height:56,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE"}} onError={e=>e.target.style.display="none"}/>
+        : <div style={{width:56,height:56,borderRadius:10,background:`${color}20`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🛍️</div>
+      }
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:8,color,fontWeight:800,marginBottom:3}}>🟢 네이버 인기상품 추천</div>
+        <div style={{fontSize:12,fontWeight:800,color:TX,lineHeight:1.35,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",marginBottom:4}}>{title}</div>
+        <div style={{fontSize:14,fontWeight:900,color}}>{price}원~</div>
+      </div>
+      <div style={{fontSize:11,color,flexShrink:0,fontWeight:700}}>구매 →</div>
+    </a>
+  );
+}
+
+/* ═══════════ 가이드 아이템별 추천 상품 (인라인 미니카드) ══════════ */
+const ITEM_KW = {
+  "기저귀 (신생아)":"신생아 기저귀", "물티슈":"아기 물티슈", "젖병 + 소독기":"신생아 젖병",
+  "속싸개 2~3개":"속싸개", "귀 체온계":"아기 체온계", "배냇저고리 5벌":"배냇저고리",
+  "아기침대":"아기 침대", "방수패드 3장":"아기 방수패드", "수유쿠션":"수유쿠션",
+  "아기욕조":"아기 욕조", "아기 로션":"아기 로션", "바디워시":"아기 바디워시",
+  "카시트":"신생아 카시트", "손톱깎이":"아기 손톱깎이", "젖병 세정제 + 솔":"젖병 세정제",
+  "하이체어":"아기 하이체어", "유모차":"유모차", "레고 듀플로":"아기 블록",
+  "신발":"아기 신발", "보행기":"아기 보행기", "점퍼루":"점퍼루",
+  "모빌":"아기 모빌", "쪽쪽이":"신생아 공갈젖꼭지",
+  "수유 패드":"수유패드", "유축기":"유축기", "젖꼭지 크림":"젖꼭지 크림",
+  "분유":"분유", "젖꼭지":"젖꼭지", "보틀워머":"젖병 워머",
+  "이유식 의자":"이유식 의자", "이유식기":"이유식기 세트",
+  "아기띠":"아기띠", "딸랑이":"딸랑이", "치발기":"치발기",
+  "안전문":"아기 안전문", "모서리 보호대":"모서리 보호대",
+};
+
+function ItemProduct({ itemName, color }) {
+  const [prod, setProd] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const kw = ITEM_KW[itemName] || itemName;
+
+  useEffect(()=>{
+    fetch(`/api/naver?query=${encodeURIComponent(kw)}&sort=sim&display=1`)
+      .then(r=>r.json())
+      .then(d=>{
+        const item = d.items?.[0];
+        if(item) setProd(item);
+        setLoading(false);
+      })
+      .catch(()=>setLoading(false));
+  },[kw]);
+
+  if(loading) return(
+    <div style={{width:60,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+      <div style={{width:52,height:52,borderRadius:8,background:"#F0EDE8"}}/>
+      <div style={{width:50,height:8,borderRadius:4,background:"#F0EDE8"}}/>
+    </div>
+  );
+  if(!prod) return null;
+
+  const title = (prod.title||"").replace(/<[^>]+>/g,"");
+  const price = parseInt(prod.lprice||0).toLocaleString();
+
+  return(
+    <a href={prod.link} target="_blank" rel="noopener noreferrer"
+      style={{width:64,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3,textDecoration:"none"}}>
+      {prod.image
+        ?<img src={prod.image} alt={title} style={{width:56,height:56,borderRadius:8,objectFit:"cover",border:`1.5px solid ${color}30`}} onError={e=>e.target.style.display="none"}/>
+        :<div style={{width:56,height:56,borderRadius:8,background:`${color}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,border:`1.5px solid ${color}30`}}>🛍️</div>
+      }
+      <div style={{fontSize:9,fontWeight:900,color,textAlign:"center"}}>{price}원~</div>
+      <div style={{fontSize:7,color:"#999",textAlign:"center",lineHeight:1.3,
+        overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",width:"100%"}}>
+        {title.slice(0,16)}
+      </div>
+    </a>
+  );
+}
+
 function GuideDetail({ guide, onClose }) {
   if (!guide) return null;
   return (
-    <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",flexDirection:"column"}}>
-      <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={onClose}/>
-      <div style={{background:BG,borderRadius:"24px 24px 0 0",maxHeight:"88vh",display:"flex",flexDirection:"column",animation:"sheetUp .25s ease",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"14px 0 4px"}}><div style={{width:40,height:4,borderRadius:9,background:BO}}/></div>
-        <div style={{padding:"8px 18px 14px",background:CA,borderRadius:"24px 24px 0 0",borderBottom:`1px solid ${BO}`}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:28}}>{guide.emoji}</span>
-            <div>
-              <div style={{fontSize:15,fontWeight:900,color:TX}}>{guide.title}</div>
-              <span style={{background:`${guide.color}20`,color:guide.color,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{guide.tag}</span>
-            </div>
-          </div>
-          <div style={{fontSize:12,color:MU,marginTop:8,lineHeight:1.6}}>{guide.desc}</div>
+    // zIndex 낮춰서 하단 네비(zIndex 100)보다 위이지만 덮지 않도록
+    // bottom에 하단 네비 높이(56px + safe area) 만큼 여백
+    <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",flexDirection:"column",pointerEvents:"none"}}>
+      <div style={{flex:1,background:"rgba(0,0,0,0.45)",pointerEvents:"auto"}} onClick={onClose}/>
+      <div style={{background:BG,borderRadius:"24px 24px 0 0",maxHeight:"78vh",display:"flex",
+        flexDirection:"column",animation:"sheetUp .25s ease",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)",
+        pointerEvents:"auto",
+        marginBottom:"calc(56px + env(safe-area-inset-bottom, 0px))"}}>
+        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 3px"}}>
+          <div style={{width:36,height:4,borderRadius:9,background:BO}}/>
         </div>
-        <div style={{overflowY:"auto",flex:1,padding:"12px 16px 32px"}}>
+        <div style={{padding:"6px 16px 12px",background:CA,borderRadius:"24px 24px 0 0",borderBottom:`1px solid ${BO}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:26}}>{guide.emoji}</span>
+            <div>
+              <div style={{fontSize:14,fontWeight:900,color:TX}}>{guide.title}</div>
+              <span style={{background:`${guide.color}20`,color:guide.color,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:800}}>{guide.tag}</span>
+            </div>
+            <button onClick={onClose} style={{marginLeft:"auto",background:"none",border:"none",fontSize:18,cursor:"pointer",color:MU}}>✕</button>
+          </div>
+          <div style={{fontSize:11,color:MU,marginTop:6,lineHeight:1.5}}>{guide.desc}</div>
+        </div>
+        <div style={{overflowY:"auto",flex:1,padding:"10px 14px 20px"}}>
           {guide.items.map((item,i)=>(
-            <div key={i} style={{display:"flex",gap:12,padding:"12px 13px",borderRadius:14,marginBottom:7,background:CA,border:`1px solid ${BO}`}}>
-              <div style={{fontSize:22,flexShrink:0,width:32,textAlign:"center"}}>{item.e}</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:800,color:TX,marginBottom:4}}>{item.name}</div>
-                <div style={{fontSize:12,color:MU,lineHeight:1.6}}>{item.detail}</div>
+            <div key={i} style={{display:"flex",gap:10,padding:"10px 12px",borderRadius:12,marginBottom:6,
+              background:CA,border:`1px solid ${BO}`,alignItems:"flex-start"}}>
+              {/* 왼쪽: 이모지 + 텍스트 */}
+              <div style={{fontSize:20,flexShrink:0,width:28,textAlign:"center",marginTop:2}}>{item.e}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:800,color:TX,marginBottom:3}}>{item.name}</div>
+                <div style={{fontSize:11,color:MU,lineHeight:1.5}}>{item.detail}</div>
               </div>
+              {/* 오른쪽: 추천 상품 1개 */}
+              <ItemProduct itemName={item.name} color={guide.color}/>
             </div>
           ))}
         </div>
@@ -880,14 +1021,15 @@ function useLiveItems(keyword, sortBy){
 
 // 카테고리 → 검색 키워드 매핑
 const CAT_KW={
-  "수유":"젖병 수유 아기","기저귀":"기저귀 아기","위생":"물티슈 아기",
-  "건강":"체온계 아기","수면":"속싸개 아기","목욕":"아기 로션 바디워시",
-  "의류":"배냇저고리 아기","이동":"아기띠 유모차","놀이":"딸랑이 아기 장난감",
-  "안전":"아기 안전용품","이유식":"이유식 스푼 아기",
-  "수유용품":"젖병 수유 아기","기저귀/위생":"기저귀 아기",
-  "수면용품":"속싸개 백색소음","목욕/스킨":"아기 로션","건강/안전":"체온계 아기",
-  "이동용품":"아기띠 유모차","놀이/발달":"딸랑이 치발기","이유식용품":"이유식 스푼",
-  "안전용품":"아기 안전 콘센트","전체":""
+  "수유":"젖병","기저귀":"기저귀","위생":"아기 물티슈",
+  "건강":"아기 체온계","수면":"속싸개","목욕":"아기 로션",
+  "의류":"아기 배냇저고리","이동":"아기띠","놀이":"아기 딸랑이",
+  "안전":"아기 안전용품","이유식":"이유식 스푼",
+  "수유용품":"젖병","기저귀/위생":"기저귀",
+  "수면용품":"속싸개","목욕/스킨":"아기 바디워시","건강/안전":"아기 체온계",
+  "이동용품":"아기띠","놀이/발달":"치발기","이유식용품":"이유식 도구",
+  "안전용품":"아기 안전 콘센트커버","음식":"아기 과자","교육":"아기 그림책",
+  "신발":"아기 신발","전체":""
 };
 
 /* ═══════════ 실시간 상품 카드 (전 몰 통합) ══════════ */
@@ -897,34 +1039,33 @@ function LiveCard({item, rank}){
   const bg=item.mallBg||"#F5F5F5";
   return(
     <div onClick={()=>item.link&&window.open(item.link,"_blank")}
-      style={{background:"#fff",borderRadius:14,border:`1.5px solid ${color}25`,
-        boxShadow:"0 2px 10px rgba(0,0,0,0.06)",cursor:"pointer",overflow:"hidden"}}>
-      {/* 몰 헤더 바 */}
-      <div style={{background:color,padding:"5px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:5}}>
-          <span style={{fontSize:11,color:"#fff",fontWeight:900}}>{item.mall}</span>
-          {item.badge&&<span style={{background:"rgba(255,255,255,0.25)",color:"#fff",borderRadius:4,padding:"1px 6px",fontSize:8,fontWeight:800}}>{item.badge}</span>}
+      style={{background:"#fff",borderRadius:12,border:`1.5px solid ${color}20`,
+        boxShadow:"0 1px 5px rgba(0,0,0,0.05)",cursor:"pointer",overflow:"hidden"}}>
+      <div style={{background:color,padding:"3px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:4}}>
+          <span style={{fontSize:9,color:"#fff",fontWeight:900}}>{item.mall}</span>
+          {item.badge&&<span style={{background:"rgba(255,255,255,0.2)",color:"#fff",borderRadius:3,padding:"0px 4px",fontSize:7,fontWeight:800}}>{item.badge}</span>}
         </div>
-        <span style={{fontSize:10,color:"rgba(255,255,255,0.9)",fontWeight:700}}>{rank<=3?MEDALS[rank-1]:`${rank}위`}</span>
+        <span style={{fontSize:9,color:"rgba(255,255,255,0.9)",fontWeight:700}}>{rank<=3?MEDALS[rank-1]:`${rank}위`}</span>
       </div>
-      <div style={{display:"flex",gap:10,alignItems:"flex-start",padding:"11px 12px"}}>
-        {/* 이미지 or 플레이스홀더 */}
+      <div style={{display:"flex",gap:8,alignItems:"center",padding:"7px 10px"}}>
         {item.image
-          ?<img src={item.image} alt={item.title} style={{width:64,height:64,borderRadius:10,objectFit:"cover",flexShrink:0,border:"1px solid #EEE"}} onError={e=>e.target.style.display="none"}/>
-          :<div style={{width:64,height:64,borderRadius:10,background:bg,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,border:`1px solid ${color}20`}}>🛍️</div>
+          ?<img src={item.image} alt={item.title} style={{width:48,height:48,borderRadius:8,objectFit:"cover",flexShrink:0,border:"1px solid #EEE"}} onError={e=>e.target.style.display="none"}/>
+          :<div style={{width:48,height:48,borderRadius:8,background:bg,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🛍️</div>
         }
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:12,fontWeight:800,color:"#1A1A1A",lineHeight:1.35,marginBottom:5,
+          <div style={{fontSize:11,fontWeight:800,color:"#1A1A1A",lineHeight:1.3,marginBottom:3,
             overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-            {item.title}
+            {item.title||item.productName}
           </div>
-          <div style={{fontSize:16,fontWeight:900,color,marginBottom:4}}>
-            {typeof item.price==="number"?item.price.toLocaleString():item.price}원
-          </div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-            {item.rating>0&&<span style={{fontSize:10,fontWeight:800,color:"#FFB300"}}>★{Number(item.rating).toFixed(1)}</span>}
-            {item.reviewCount>0&&<span style={{fontSize:9,color:"#888"}}>리뷰 {Number(item.reviewCount).toLocaleString()}개</span>}
-            <span style={{fontSize:8,color:color,fontWeight:700,marginLeft:"auto"}}>탭하여 구매 →</span>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{fontSize:13,fontWeight:900,color}}>
+              {typeof item.price==="number"?item.price.toLocaleString():parseInt(item.price||0).toLocaleString()}원
+            </div>
+            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+              {Number(item.rating)>0&&<span style={{fontSize:9,color:"#FFB300"}}>★{Number(item.rating).toFixed(1)}</span>}
+              {Number(item.reviewCount)>0&&<span style={{fontSize:8,color:"#999"}}>💬{Number(item.reviewCount).toLocaleString()}</span>}
+            </div>
           </div>
         </div>
       </div>
@@ -1002,10 +1143,12 @@ function MallSelector(){
 function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct,onSelectGuide}){
   const autoMonth=calcMonth(bday);
   const [sortBy,setSortBy]=useState("score");
-  const [selected,setSelected]=useState({naver:true,eleven:true});
+  const [searchQ,setSearchQ]=useState("");
+  const [activeSearch,setActiveSearch]=useState("");
 
   const curGroup=getGroupByMonth(month);
-  const keyword=getGroupKeyword(curGroup.id)+" 용품";
+  const baseKeyword=getGroupKeyword(curGroup.id)+" 용품";
+  const keyword=activeSearch||baseKeyword;
   const {items,loading}=useLiveItems(keyword,sortBy);
 
   const prods=getGroupProducts(curGroup.id);
@@ -1013,41 +1156,52 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
   const catColors=[PINK,MINT,LAVEN,SKY,"#FFB347",P,"#8BC34A","#FF7043"];
   const cats=[...new Set(prods.map(p=>p.cat))];
 
+  function doSearch(e){
+    e.preventDefault();
+    if(searchQ.trim()) setActiveSearch(searchQ.trim());
+  }
+
   return(
     <div style={{overflowY:"auto",flex:1}}>
-      {/* 헤더 */}
-      <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",padding:"10px 14px 12px",position:"relative",overflow:"hidden"}}>
-        {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:13+i,left:`${(i*11)%90}%`,bottom:"-5%",opacity:.3,animation:`floatUp ${6+i}s ${i*0.5}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
+      {/* 헤더 — 컴팩트 */}
+      <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",padding:"8px 14px 10px",position:"relative",overflow:"hidden"}}>
+        {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:10+i,left:`${(i*11)%90}%`,bottom:"-5%",opacity:.25,animation:`floatUp ${6+i}s ${i*0.5}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
         <div style={{position:"relative",zIndex:1}}>
-          {bday&&autoMonth!==null?(
-            <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:16}}>🌟</span>
-              <div>
-                <div style={{fontSize:13,fontWeight:900,color:P}}>{babyName||"아기"} · {autoMonth}개월</div>
-                <div style={{fontSize:9,color:MU}}>{getGroupByMonth(autoMonth).emoji} {getGroupByMonth(autoMonth).label} · {getGroupByMonth(autoMonth).sub}</div>
-              </div>
+          {/* 아기 정보 — 한줄 */}
+          {bday&&autoMonth!==null&&(
+            <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+              <span style={{fontSize:13}}>🌟</span>
+              <span style={{fontSize:12,fontWeight:900,color:P}}>{babyName||"아기"} · {autoMonth}개월</span>
+              <span style={{fontSize:9,color:MU}}>({getGroupByMonth(autoMonth).label})</span>
             </div>
-          ):(
-            <div style={{fontSize:11,color:MU,marginBottom:6,fontWeight:600}}>개월 수를 선택하세요 👶</div>
           )}
-          {/* 그룹 버튼 */}
-          <div style={{display:"flex",gap:5,paddingBottom:4}}>
+          {/* 검색창 */}
+          <form onSubmit={doSearch} style={{display:"flex",gap:6,marginBottom:7}}>
+            <div style={{flex:1,position:"relative"}}>
+              <span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:12,color:MU}}>🔍</span>
+              <input value={searchQ} onChange={e=>setSearchQ(e.target.value)}
+                placeholder="육아용품 검색..."
+                style={{width:"100%",background:"rgba(255,255,255,0.95)",border:`1.5px solid ${BO}`,borderRadius:10,padding:"7px 8px 7px 26px",fontSize:12,color:TX,boxSizing:"border-box",outline:"none",fontFamily:"inherit"}}/>
+              {searchQ&&<button type="button" onClick={()=>{setSearchQ("");setActiveSearch("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:MU,cursor:"pointer",fontSize:12}}>✕</button>}
+            </div>
+            <button type="submit" style={{background:`linear-gradient(135deg,${P},${G})`,color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:11,fontWeight:900,cursor:"pointer",whiteSpace:"nowrap"}}>검색</button>
+          </form>
+          {/* 그룹 버튼 — 컴팩트 */}
+          <div style={{display:"flex",gap:4,paddingBottom:2}}>
             {MONTH_GROUPS.map(g=>{
               const active=g.months.includes(month);
               const isBaby=autoMonth!==null&&g.months.includes(autoMonth);
               return(
-                <button key={g.id} onClick={()=>setMonth(g.months[0])}
+                <button key={g.id} onClick={()=>{setMonth(g.months[0]);setActiveSearch("");setSearchQ("");}}
                   style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
-                    padding:"7px 4px",borderRadius:14,
+                    padding:"5px 3px",borderRadius:10,
                     background:active?`linear-gradient(135deg,${g.color},${g.color}bb)`:"rgba(255,255,255,0.9)",
-                    color:active?"#fff":MU,
-                    border:active?"none":`1.5px solid ${BO}`,
+                    color:active?"#fff":MU,border:active?"none":`1.5px solid ${BO}`,
                     fontWeight:900,cursor:"pointer",position:"relative",gap:1,
-                    boxShadow:active?`0 4px 14px ${g.color}50`:`0 2px 6px rgba(0,0,0,0.05)`}}>
-                  <span style={{fontSize:16}}>{g.emoji}</span>
-                  <span style={{fontSize:10,fontWeight:900,lineHeight:1.2,textAlign:"center",whiteSpace:"nowrap"}}>{g.label}</span>
-                  <span style={{fontSize:7,fontWeight:600,opacity:active?0.9:0.55,lineHeight:1.3,textAlign:"center",whiteSpace:"nowrap",overflow:"hidden",maxWidth:"100%"}}>{g.sub.slice(0,7)}</span>
-                  {isBaby&&<div style={{position:"absolute",top:-5,right:-3,background:P,borderRadius:99,padding:"1px 4px",fontSize:7,color:"#fff",fontWeight:900,border:"2px solid #fff",whiteSpace:"nowrap"}}>우리</div>}
+                    boxShadow:active?`0 3px 10px ${g.color}50`:`0 1px 4px rgba(0,0,0,0.05)`}}>
+                  <span style={{fontSize:13}}>{g.emoji}</span>
+                  <span style={{fontSize:9,fontWeight:900,lineHeight:1.2,textAlign:"center",whiteSpace:"nowrap"}}>{g.label}</span>
+                  {isBaby&&<div style={{position:"absolute",top:-4,right:-2,background:P,borderRadius:99,padding:"0px 3px",fontSize:6,color:"#fff",fontWeight:900,border:"1.5px solid #fff"}}>우리</div>}
                 </button>
               );
             })}
@@ -1055,83 +1209,73 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
         </div>
       </div>
 
-      <div style={{padding:"10px 14px 28px"}}>
+      <div style={{padding:"8px 12px 20px"}}>
 
-        {/* 가이드 — 2열 그리드 한눈에 */}
-        <div style={{marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
-            <div style={{fontSize:12,fontWeight:900,color:TX}}>📚 초보 부모 가이드</div>
-            <button onClick={()=>setTab("guide")} style={{fontSize:10,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체보기 →</button>
+        {/* 가이드 — 3열 컴팩트 */}
+        <div style={{marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+            <div style={{fontSize:11,fontWeight:900,color:TX}}>📚 육아 가이드</div>
+            <button onClick={()=>setTab("guide")} style={{fontSize:9,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체 →</button>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
             {GUIDES.map(g=>(
               <button key={g.id} onClick={()=>onSelectGuide(g)}
-                style={{display:"flex",alignItems:"center",gap:8,padding:"9px 10px",
-                  background:`linear-gradient(135deg,${g.color}15,${g.color}08)`,
-                  border:`1.5px solid ${g.color}30`,borderRadius:12,cursor:"pointer",textAlign:"left",
-                  boxShadow:`0 2px 8px ${g.color}15`}}>
-                <span style={{fontSize:18,flexShrink:0}}>{g.emoji}</span>
-                <div style={{minWidth:0}}>
-                  <div style={{fontSize:8,fontWeight:800,color:g.color,marginBottom:1}}>{g.tag}</div>
-                  <div style={{fontSize:11,fontWeight:900,color:TX,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{g.title}</div>
-                </div>
+                style={{display:"flex",alignItems:"center",gap:5,padding:"6px 7px",
+                  background:`${g.color}10`,border:`1px solid ${g.color}25`,
+                  borderRadius:9,cursor:"pointer",textAlign:"left"}}>
+                <span style={{fontSize:13,flexShrink:0}}>{g.emoji}</span>
+                <span style={{fontSize:9,fontWeight:800,color:TX,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{g.title.slice(0,8)}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 카테고리 — 한줄 꽉 차게 */}
-        <div style={{marginBottom:12}}>
-          <div style={{display:"grid",gridTemplateColumns:`repeat(${cats.length},1fr)`,gap:4}}>
-            {cats.map((cat,i)=>(
-              <button key={cat} onClick={()=>setTab("shop")}
-                style={{background:`linear-gradient(135deg,${catColors[i%catColors.length]}22,${catColors[i%catColors.length]}10)`,
-                  color:catColors[i%catColors.length],
-                  border:`1.5px solid ${catColors[i%catColors.length]}40`,
-                  borderRadius:10,padding:"7px 2px",fontSize:10,fontWeight:900,cursor:"pointer",
-                  textAlign:"center",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {cat}
-              </button>
-            ))}
-          </div>
+        {/* 카테고리 — 한줄 */}
+        <div style={{display:"flex",gap:3,marginBottom:8,overflowX:"auto",scrollbarWidth:"none"}}>
+          {cats.map((cat,i)=>(
+            <button key={cat} onClick={()=>setTab("shop")}
+              style={{flexShrink:0,background:`${catColors[i%catColors.length]}18`,
+                color:catColors[i%catColors.length],border:`1px solid ${catColors[i%catColors.length]}35`,
+                borderRadius:8,padding:"4px 9px",fontSize:10,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* 실시간 비교 */}
-        <div style={{marginBottom:10}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-            <div style={{fontSize:13,fontWeight:900,color:TX}}>🛍️ 쇼핑몰 실시간 가격 비교</div>
-            <span style={{fontSize:9,color:MU}}>{curGroup.emoji} {curGroup.label}</span>
+        <div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+            <div style={{fontSize:12,fontWeight:900,color:TX}}>
+              🛍️ {activeSearch?`"${activeSearch}" 검색결과`:`${curGroup.emoji} ${curGroup.label} 인기상품`}
+            </div>
+            {activeSearch&&<button onClick={()=>{setActiveSearch("");setSearchQ("");}} style={{fontSize:9,color:MU,background:"none",border:"none",cursor:"pointer"}}>✕ 초기화</button>}
           </div>
 
-          {/* 쇼핑몰 선택 */}
+          {/* 쇼핑몰 표시 */}
           <MallSelector/>
 
           {/* 정렬 */}
-          <div style={{display:"flex",gap:5,marginBottom:10}}>
-            {[{k:"score",l:"종합순"},{k:"sales",l:"판매순"},{k:"reviews",l:"리뷰순"},{k:"rating",l:"별점순"},{k:"price_asc",l:"낮은가격"}].map(({k,l})=>(
-              <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"6px 2px",borderRadius:8,background:sortBy===k?P:"#fff",color:sortBy===k?"#fff":MU,border:sortBy===k?"none":`1px solid ${BO}`,fontWeight:sortBy===k?900:600,fontSize:9,cursor:"pointer"}}>{l}</button>
+          <div style={{display:"flex",gap:4,marginBottom:7}}>
+            {[{k:"score",l:"종합"},{k:"sales",l:"판매"},{k:"reviews",l:"리뷰"},{k:"rating",l:"별점"},{k:"price_asc",l:"낮은가격"}].map(({k,l})=>(
+              <button key={k} onClick={()=>setSortBy(k)} style={{flex:1,padding:"5px 2px",borderRadius:7,background:sortBy===k?P:"#fff",color:sortBy===k?"#fff":MU,border:sortBy===k?"none":`1px solid ${BO}`,fontWeight:sortBy===k?900:600,fontSize:9,cursor:"pointer"}}>{l}</button>
             ))}
           </div>
 
           {/* 상품 리스트 */}
           {loading?(
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[1,2,3,4,5,6].map(i=><Skeleton key={i}/>)}
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {[1,2,3,4,5].map(i=><Skeleton key={i}/>)}
             </div>
           ):items.length===0?(
-            <div style={{textAlign:"center",padding:"32px 0",color:MU,background:CA,borderRadius:14,border:`1px solid ${BO}`}}>
-              <div style={{fontSize:28,marginBottom:6}}>🔍</div>
-              <div style={{fontSize:12}}>잠시만요, 10개 몰 검색 중이에요...</div>
+            <div style={{textAlign:"center",padding:"24px 0",color:MU,background:CA,borderRadius:12,border:`1px solid ${BO}`}}>
+              <div style={{fontSize:24,marginBottom:5}}>🔍</div>
+              <div style={{fontSize:11}}>검색 중이에요...</div>
             </div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {items.map((item,i)=><LiveCard key={i} item={item} rank={i+1}/>)}
             </div>
           )}
-
-          <div style={{marginTop:10,padding:"7px 12px",background:CA,borderRadius:10,border:`1px solid ${BO}`}}>
-            <div style={{fontSize:9,color:MU,textAlign:"center"}}>🤖 Claude AI · 쿠팡·네이버·11번가·G마켓·옥션 등 10개 몰 실시간 검색</div>
-          </div>
         </div>
       </div>
     </div>
@@ -1440,7 +1584,9 @@ export default function App(){
   function handleNav(id){if(id==="wish"){setShowWish(true);return;}setTab(id);}
 
   return(
-    <div style={{fontFamily:"'Noto Sans KR','Apple SD Gothic Neo',sans-serif",background:BG,minHeight:"100vh",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column",height:"100dvh",overflow:"hidden"}}>
+    /* PC에서는 폰 프레임처럼 중앙에, 모바일에서는 전체화면 */
+    <div style={{minHeight:"100vh",background:"#E8E0D8",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{fontFamily:"'Noto Sans KR','Apple SD Gothic Neo',sans-serif",background:BG,width:"100%",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column",height:"100dvh",overflow:"hidden",position:"relative",boxShadow:"0 0 40px rgba(0,0,0,0.15)"}}>
       {splash&&<Splash/>}
       {/* TOP BAR */}
       <div style={{background:CA,padding:"12px 16px 10px",borderBottom:`1px solid ${BO}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:`0 2px 12px rgba(255,112,67,0.07)`}}>
@@ -1470,7 +1616,7 @@ export default function App(){
         {tab==="profile"&&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} cart={cart} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
       </div>
       {/* BOTTOM NAV */}
-      <div style={{background:CA,borderTop:`1px solid ${BO}`,display:"flex",paddingBottom:"env(safe-area-inset-bottom,6px)",flexShrink:0,boxShadow:`0 -3px 14px rgba(0,0,0,0.05)`}}>
+      <div style={{background:CA,borderTop:`1px solid ${BO}`,display:"flex",paddingBottom:"env(safe-area-inset-bottom,6px)",flexShrink:0,boxShadow:`0 -3px 14px rgba(0,0,0,0.05)`,position:"relative",zIndex:300}}>
         {NAV.map(({id,icon,label,badge})=>{
           const active=(id!=="wish")&&tab===id;
           return(
@@ -1507,6 +1653,7 @@ export default function App(){
         input::placeholder    { color:#C4A58A }
         button                { font-family:inherit }
       `}</style>
+    </div>
     </div>
   );
 }
