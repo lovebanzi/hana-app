@@ -1217,14 +1217,14 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
             <div style={{fontSize:11,fontWeight:900,color:TX}}>📚 육아 가이드</div>
             <button onClick={()=>setTab("guide")} style={{fontSize:9,color:P,background:"none",border:"none",cursor:"pointer",fontWeight:700}}>전체 →</button>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
             {GUIDES.map(g=>(
               <button key={g.id} onClick={()=>onSelectGuide(g)}
                 style={{display:"flex",alignItems:"center",gap:5,padding:"6px 7px",
                   background:`${g.color}10`,border:`1px solid ${g.color}25`,
                   borderRadius:9,cursor:"pointer",textAlign:"left"}}>
                 <span style={{fontSize:13,flexShrink:0}}>{g.emoji}</span>
-                <span style={{fontSize:9,fontWeight:800,color:TX,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{g.title.slice(0,8)}</span>
+                <span style={{fontSize:10,fontWeight:800,color:TX,lineHeight:1.3,wordBreak:"keep-all"}}>{g.title}</span>
               </button>
             ))}
           </div>
