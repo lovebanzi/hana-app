@@ -999,13 +999,28 @@ function useLiveItems(keyword, sortBy){
       })))
       .catch(()=>[]);
 
-    Promise.all([naverFetch, elevenFetch]).then(([naver, eleven])=>{
+    const kakaoFetch = fetch(`/api/kakao?query=${encodeURIComponent(keyword)}&display=10`)
+      .then(r=>r.json())
+      .then(data=>(data.items||[]).map(item=>({
+        mall:"카카오쇼핑",
+        title:(item.title||"").replace(/<[^>]+>/g,""),
+        price:parseInt(item.lprice)||0,
+        image:item.image||"",
+        rating:0,reviewCount:0,
+        badge:item.mallName||"카카오",
+        link:item.link||`https://shopping.kakao.com/search?q=${encodeURIComponent(keyword)}`,
+        mallColor:"#F9E000",mallBg:"#FFFDE7",
+      })))
+      .catch(()=>[]);
+
+    Promise.all([naverFetch, elevenFetch, kakaoFetch]).then(([naver, eleven, kakao])=>{
       // 인터리빙: 네이버1, 11번가1, 네이버2, 11번가2...
       const merged = [];
-      const max = Math.max(naver.length, eleven.length);
+      const max = Math.max(naver.length, eleven.length, kakao.length);
       for(let i=0; i<max; i++){
         if(naver[i]) merged.push(naver[i]);
         if(eleven[i]) merged.push(eleven[i]);
+        if(kakao[i]) merged.push(kakao[i]);
       }
       let arr = merged;
       if(sortBy==="price_asc") arr.sort((a,b)=>a.price-b.price);
