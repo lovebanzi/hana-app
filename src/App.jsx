@@ -1157,7 +1157,6 @@ function MallSelector(){
 
 function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct,onSelectGuide}){
   const [showAd,setShowAd]=useState(true);
-  const [shopCat,setShopCat]=useState("전체");
   const autoMonth=calcMonth(bday);
   const [sortBy,setSortBy]=useState("score");
   const [searchQ,setSearchQ]=useState("");
@@ -1333,9 +1332,9 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
 }
 
 /* ═══════════ SHOP TAB ══════════ */
-function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct,initialCat}){
+function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
   const [sort,setSort]=useState("score");
-  const [cat,setCat]=useState(initialCat||"전체");
+  const [cat,setCat]=useState("전체");
   const [selected,setSelected]=useState({naver:true,eleven:true});
   const [q,setQ]=useState("");
 
@@ -1661,7 +1660,7 @@ export default function App(){
       {/* CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         {tab==="home"&&<HomeTab month={month} setMonth={setMonth} babyName={babyName} bday={bday} wish={wish} onWish={toggleWish} onCart={addCart} setTab={setTab} onSelectProduct={setSelProd} onSelectGuide={g=>{setSelGuide(g);setTab("guide");}}/>}
-        {tab==="shop"&&<ShopTab month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onCart={addCart} onSelectProduct={setSelProd} initialCat={shopCat}/>}
+        {tab==="shop"&&<ShopTab month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onCart={addCart} onSelectProduct={setSelProd}/>}
         {tab==="guide"&&<GuideTab initialGuide={selGuide} onClearGuide={()=>setSelGuide(null)}/>}
         {tab==="profile"&&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} cart={cart} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
       </div>
