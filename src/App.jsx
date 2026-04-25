@@ -1156,6 +1156,7 @@ function MallSelector(){
 
 
 function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct,onSelectGuide}){
+  const [showAd,setShowAd]=useState(true);
   const autoMonth=calcMonth(bday);
   const [sortBy,setSortBy]=useState("score");
   const [searchQ,setSearchQ]=useState("");
@@ -1178,6 +1179,34 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
 
   return(
     <div style={{overflowY:"auto",flex:1}}>
+      {showAd&&(
+        <div style={{margin:"10px 14px 0",borderRadius:14,overflow:"hidden",
+          boxShadow:"0 2px 12px rgba(0,0,0,0.10)",border:"1px solid #B3E5FC",
+          background:"#fff",display:"flex",alignItems:"stretch",position:"relative"}}>
+          <div style={{background:"linear-gradient(160deg,#29B6F6,#0277BD)",width:72,flexShrink:0,
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0"}}>
+            <div style={{fontSize:28}}>🦷</div>
+            <div style={{color:"#fff",fontSize:9,fontWeight:700,marginTop:3,textAlign:"center"}}>쿨픽 공식스토어</div>
+          </div>
+          <div style={{flex:1,padding:"10px 12px",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontSize:9,color:"#0288D1",fontWeight:700}}>✨ HANA 추천 광고</div>
+              <div style={{fontSize:13,fontWeight:900,color:"#1a1a1a",lineHeight:1.3,marginTop:2}}>치카프렌즈 어린이 전동칫솔</div>
+              <div style={{fontSize:10,color:"#777",marginTop:2}}>부드러운 진동으로 치아 건강 UP!</div>
+            </div>
+            <a href="https://smartstore.naver.com/coolpick_official/products/13053434584"
+              target="_blank" rel="noopener noreferrer"
+              style={{display:"inline-block",background:"#0288D1",color:"#fff",fontWeight:800,
+                fontSize:11,padding:"5px 12px",borderRadius:8,textDecoration:"none",marginTop:6}}>
+              구경하기 →
+            </a>
+          </div>
+          <button onClick={()=>setShowAd(false)} style={{
+            position:"absolute",top:6,right:8,background:"none",border:"none",
+            fontSize:13,color:"#bbb",cursor:"pointer",padding:0,lineHeight:1
+          }}>✕</button>
+        </div>
+      )}
       {/* 헤더 — 컴팩트 */}
       <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",padding:"8px 14px 10px",position:"relative",overflow:"hidden"}}>
         {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:10+i,left:`${(i*11)%90}%`,bottom:"-5%",opacity:.25,animation:`floatUp ${6+i}s ${i*0.5}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
