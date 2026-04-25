@@ -346,7 +346,7 @@ const GUIDES = [
 function Splash() {
   const fl=["🍼","🧸","⭐","🌙","💫","🎀","🐣","🌈","✨","🦋","💕","🌸"];
   return (
-    <div style={{position:"fixed",inset:0,zIndex:9999,background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashOut 0.5s ease 1.8s forwards"}}>
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"linear-gradient(135deg,#FFF5F8,#FFE8F0,#FFF0F5)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"splashOut 0.5s ease 1.8s forwards"}}>
       {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:14+i,left:`${(i*9)%90}%`,bottom:"-5%",opacity:.4,animation:`floatUp ${5+i}s ${i*0.4}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
       <div style={{textAlign:"center",zIndex:1,padding:"0 20px"}}>
         <div style={{fontSize:72,animation:"spinBounce 1.2s ease",marginBottom:16}}>☀️</div>
@@ -1213,7 +1213,7 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
         </div>
       )}
       {/* 헤더 — 컴팩트 */}
-      <div style={{background:"linear-gradient(160deg,#FFF0E6,#FFF8E6,#F0F8FF)",padding:"8px 14px 10px",position:"relative",overflow:"hidden"}}>
+      <div style={{background:"linear-gradient(135deg,#FFF5F8,#FFE8F0,#FFF0F5)",padding:"8px 14px 10px",position:"relative",overflow:"hidden"}}>
         {fl.map((f,i)=><div key={i} style={{position:"absolute",fontSize:10+i,left:`${(i*11)%90}%`,bottom:"-5%",opacity:.25,animation:`floatUp ${6+i}s ${i*0.5}s infinite linear`,pointerEvents:"none"}}>{f}</div>)}
         <div style={{position:"relative",zIndex:1}}>
           {/* 아기 정보 — 한줄 */}
