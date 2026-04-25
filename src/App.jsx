@@ -1180,31 +1180,36 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
   return(
     <div style={{overflowY:"auto",flex:1}}>
       {showAd&&(
-        <div style={{margin:"10px 14px 0",borderRadius:14,overflow:"hidden",
-          boxShadow:"0 2px 12px rgba(0,0,0,0.10)",border:"1px solid #B3E5FC",
-          background:"#fff",display:"flex",alignItems:"stretch",position:"relative"}}>
-          <div style={{background:"linear-gradient(160deg,#29B6F6,#0277BD)",width:72,flexShrink:0,
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0"}}>
-            <div style={{fontSize:28}}>🦷</div>
-            <div style={{color:"#fff",fontSize:9,fontWeight:700,marginTop:3,textAlign:"center"}}>쿨픽 공식스토어</div>
-          </div>
-          <div style={{flex:1,padding:"10px 12px",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
-            <div>
-              <div style={{fontSize:9,color:"#0288D1",fontWeight:700}}>✨ HANA 추천 광고</div>
-              <div style={{fontSize:13,fontWeight:900,color:"#1a1a1a",lineHeight:1.3,marginTop:2}}>치카프렌즈 어린이 전동칫솔</div>
-              <div style={{fontSize:10,color:"#777",marginTop:2}}>부드러운 진동으로 치아 건강 UP!</div>
+        <div style={{margin:"8px 14px 0",borderRadius:18,overflow:"hidden",
+          boxShadow:"0 4px 14px rgba(255,182,193,0.35)",border:"1.5px solid #FFD6E8",
+          background:"linear-gradient(135deg,#FFF5F8 0%,#FFE8F0 50%,#FFF0F5 100%)",
+          display:"flex",alignItems:"center",position:"relative",padding:"8px 10px",
+          animation:"wiggle 3s ease-in-out infinite"}}>
+          <div style={{fontSize:32,marginRight:8,animation:"bounce 1.5s ease-in-out infinite"}}>🪥</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+              <span style={{fontSize:8,fontWeight:900,color:"#fff",background:"linear-gradient(135deg,#FF6B9D,#FF8BAD)",
+                padding:"1px 6px",borderRadius:8,letterSpacing:0.3}}>HOT 🔥</span>
+              <span style={{fontSize:8,color:"#FF6B9D",fontWeight:700}}>HANA 추천</span>
             </div>
-            <a href="https://smartstore.naver.com/coolpick_official/products/13053434584"
-              target="_blank" rel="noopener noreferrer"
-              style={{display:"inline-block",background:"#0288D1",color:"#fff",fontWeight:800,
-                fontSize:11,padding:"5px 12px",borderRadius:8,textDecoration:"none",marginTop:6}}>
-              구경하기 →
-            </a>
+            <div style={{fontSize:11,fontWeight:900,color:"#5A2D3F",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+              치카프렌즈 어린이 칫솔 🌟
+            </div>
+            <div style={{fontSize:9,color:"#A86B85",marginTop:1}}>부드럽고 깜찍한 칫솔!</div>
           </div>
+          <a href="https://smartstore.naver.com/coolpick_official/products/13053434584"
+            target="_blank" rel="noopener noreferrer"
+            style={{display:"inline-block",background:"linear-gradient(135deg,#FF6B9D,#FF8BAD)",
+              color:"#fff",fontWeight:900,fontSize:9,padding:"5px 10px",borderRadius:14,
+              textDecoration:"none",marginRight:18,boxShadow:"0 2px 6px rgba(255,107,157,0.4)",
+              whiteSpace:"nowrap"}}>
+            보러가기 💕
+          </a>
           <button onClick={()=>setShowAd(false)} style={{
-            position:"absolute",top:6,right:8,background:"none",border:"none",
-            fontSize:13,color:"#bbb",cursor:"pointer",padding:0,lineHeight:1
-          }}>✕</button>
+            position:"absolute",top:4,right:6,background:"rgba(255,255,255,0.8)",border:"none",
+            width:18,height:18,borderRadius:"50%",fontSize:10,color:"#999",cursor:"pointer",
+            padding:0,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center",
+            boxShadow:"0 1px 3px rgba(0,0,0,0.1)"}}>×</button>
         </div>
       )}
       {/* 헤더 — 컴팩트 */}
