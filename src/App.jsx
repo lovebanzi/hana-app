@@ -1157,6 +1157,7 @@ function MallSelector(){
 
 function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelectProduct,onSelectGuide}){
   const [showAd,setShowAd]=useState(true);
+  const [shopCat,setShopCat]=useState("");
   const autoMonth=calcMonth(bday);
   const [sortBy,setSortBy]=useState("score");
   const [searchQ,setSearchQ]=useState("");
@@ -1282,7 +1283,7 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
         {/* 카테고리 — 한줄 */}
         <div style={{display:"flex",gap:3,marginBottom:8,overflowX:"auto",scrollbarWidth:"none"}}>
           {cats.map((cat,i)=>(
-            <button key={cat} onClick={()=>setTab("shop")}
+            <button key={cat} onClick={()=>{setShopCat(cat);setTab("shop");}}
               style={{flexShrink:0,background:`${catColors[i%catColors.length]}18`,
                 color:catColors[i%catColors.length],border:`1px solid ${catColors[i%catColors.length]}35`,
                 borderRadius:8,padding:"4px 9px",fontSize:10,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>
@@ -1332,7 +1333,7 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
 }
 
 /* ═══════════ SHOP TAB ══════════ */
-function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
+function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct,initialCat,clearInitialCat}){
   const [sort,setSort]=useState("score");
   const [cat,setCat]=useState("전체");
   const [selected,setSelected]=useState({naver:true,eleven:true});
@@ -1341,6 +1342,14 @@ function ShopTab({month,setMonth,wish,onWish,onCart,onSelectProduct}){
   const curGroup=getGroupByMonth(month);
   const prods=getGroupProducts(curGroup.id);
   const cats=["전체",...new Set(prods.map(p=>p.cat))];
+
+  useEffect(()=>{
+    if(initialCat){
+      const found=cats.find(c=>c.trim()===initialCat.trim());
+      if(found)setCat(found);
+      if(clearInitialCat)clearInitialCat();
+    }
+  },[initialCat]);
 
   // 키워드 만들기
   const catKw=CAT_KW[cat]||cat;
@@ -1660,7 +1669,7 @@ export default function App(){
       {/* CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         {tab==="home"&&<HomeTab month={month} setMonth={setMonth} babyName={babyName} bday={bday} wish={wish} onWish={toggleWish} onCart={addCart} setTab={setTab} onSelectProduct={setSelProd} onSelectGuide={g=>{setSelGuide(g);setTab("guide");}}/>}
-        {tab==="shop"&&<ShopTab month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onCart={addCart} onSelectProduct={setSelProd}/>}
+        {tab==="shop"&&<ShopTab month={month} setMonth={setMonth} wish={wish} onWish={toggleWish} onCart={addCart} onSelectProduct={setSelProd} initialCat={shopCat} clearInitialCat={()=>setShopCat("")}/>}
         {tab==="guide"&&<GuideTab initialGuide={selGuide} onClearGuide={()=>setSelGuide(null)}/>}
         {tab==="profile"&&<ProfileTab user={user} setShowAuth={setShowAuth} setUser={setUser} wish={wish} cart={cart} checks={checks} setChecks={setChecks} babyName={babyName} setBabyName={setBabyName} bday={bday} setBday={setBday}/>}
       </div>
