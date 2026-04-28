@@ -1281,26 +1281,26 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
 
         {/* 카테고리 안내 */}
         <div style={{
-          display:"flex",
+          display:"inline-flex",
           alignItems:"center",
-          justifyContent:"center",
-          gap:4,
+          gap:3,
           marginBottom:6,
-          padding:"6px 10px",
+          padding:"3px 9px",
           background:"linear-gradient(135deg,#FFF5F8,#FFE8F0)",
-          borderRadius:14,
-          border:"1px dashed #FFB6D9"
+          borderRadius:10,
+          border:"1px dashed #FFB6D9",
+          alignSelf:"flex-start"
         }}>
-          <span style={{fontSize:14}}>👇</span>
-          <span style={{fontSize:11,fontWeight:800,color:"#FF6B9D"}}>카테고리 클릭하고 바로 쇼핑하기</span>
+          <span style={{fontSize:11}}>👇</span>
+          <span style={{fontSize:10,fontWeight:800,color:"#FF6B9D"}}>카테고리 클릭하고 바로 쇼핑하기</span>
         </div>
         {/* 카테고리 — 한줄 */}
-        <div style={{display:"flex",gap:3,marginBottom:8,overflowX:"auto",scrollbarWidth:"none"}}>
+        <div style={{display:"flex",gap:6,marginBottom:8,justifyContent:"space-between",flexWrap:"nowrap"}}>
           {cats.map((cat,i)=>(
             <button key={cat} onClick={()=>setTab("shop")}
               style={{flexShrink:0,background:`${catColors[i%catColors.length]}18`,
                 color:catColors[i%catColors.length],border:`1px solid ${catColors[i%catColors.length]}35`,
-                borderRadius:8,padding:"4px 9px",fontSize:10,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>
+                borderRadius:10,padding:"7px 0",fontSize:11,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",flex:1,textAlign:"center"}}>
               {cat}
             </button>
           ))}
