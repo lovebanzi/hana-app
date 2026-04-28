@@ -1279,6 +1279,21 @@ function HomeTab({month,setMonth,babyName,bday,wish,onWish,onCart,setTab,onSelec
           </div>
         </div>
 
+        {/* 카테고리 안내 */}
+        <div style={{
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center",
+          gap:4,
+          marginBottom:6,
+          padding:"6px 10px",
+          background:"linear-gradient(135deg,#FFF5F8,#FFE8F0)",
+          borderRadius:14,
+          border:"1px dashed #FFB6D9"
+        }}>
+          <span style={{fontSize:14}}>👇</span>
+          <span style={{fontSize:11,fontWeight:800,color:"#FF6B9D"}}>카테고리 클릭하고 바로 쇼핑하기</span>
+        </div>
         {/* 카테고리 — 한줄 */}
         <div style={{display:"flex",gap:3,marginBottom:8,overflowX:"auto",scrollbarWidth:"none"}}>
           {cats.map((cat,i)=>(
